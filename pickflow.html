@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PickFlow – Lager &amp; Logistik</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@400..800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   PICKFLOW – Design-Tokens (gemäß Marken-Vorgaben)
+   ============================================================ */
+:root{
+  --bg:#FDFDFF;
+  --surface:#FFFFFF;
+  --tint:#F1F4FE;
+  --line:#DFE4F2;
+  --text:#0B1020;
+  --text2:#3D4560;
+  --primary:#2B3FE4;
+  --violet:#7C3AED;
+  --grad:linear-gradient(120deg,#2B3FE4,#7C3AED);
+  --red:#E8401C;      --red-bg:#FFE9E2;
+  --amber:#9A6A00;    --amber-bg:#FFF3D6;
+  --green:#0B7A4F;    --green-bg:#DCF5E9;
+  --radius:18px;
+  --shadow:0 6px 24px rgba(11,16,32,.07), 0 1px 3px rgba(11,16,32,.05);
+  --font-head:"Archivo",sans-serif;
+  --font-body:"Instrument Sans",sans-serif;
+  --font-mono:"JetBrains Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:15px}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+select,input{font-family:inherit}
+h1,h2,h3,h4{font-family:var(--font-head);font-stretch:110%;letter-spacing:-.01em}
+.mono{font-family:var(--font-mono)}
+
+/* ---------- Demo-Hinweis ---------- */
+.demo-bar{background:var(--tint);border-bottom:1px solid var(--line);color:var(--text2);
+  text-align:center;font-size:12.5px;padding:5px 12px}
+.demo-bar .mono{font-size:11px}
+
+/* ---------- App-Leiste ---------- */
+.appbar{display:flex;align-items:center;gap:20px;padding:10px 22px;background:var(--surface);
+  border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-dot{width:16px;height:16px;border-radius:50%;background:var(--grad);box-shadow:0 0 0 4px rgba(43,63,228,.12)}
+.logo-name{font-family:var(--font-head);font-weight:800;font-stretch:115%;letter-spacing:.06em;font-size:18px}
+.role-tabs{display:flex;gap:6px;background:var(--tint);padding:5px;border-radius:999px;border:1px solid var(--line)}
+.role-tab{border-radius:999px;padding:7px 18px;text-align:center;color:var(--text2);transition:all .2s}
+.role-tab .rt-name{font-family:var(--font-head);font-weight:700;font-size:13px;letter-spacing:.04em;display:block}
+.role-tab .rt-dev{font-family:var(--font-mono);font-size:9.5px;display:block;margin-top:1px;opacity:.75}
+.role-tab.active{background:var(--grad);color:#fff;box-shadow:0 3px 10px rgba(43,63,228,.35)}
+.clock{margin-left:auto;font-family:var(--font-mono);font-weight:700;font-size:20px;
+  background:var(--tint);border:1px solid var(--line);border-radius:12px;padding:6px 14px}
+.clock small{font-weight:400;font-size:11px;color:var(--text2);display:block;line-height:1}
+
+/* ---------- Allgemeine Bausteine ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.pill{border-radius:999px;padding:9px 18px;font-weight:700;font-family:var(--font-head);
+  font-size:13px;letter-spacing:.03em;transition:transform .12s, box-shadow .2s}
+.pill:active{transform:scale(.97)}
+.pill-primary{background:var(--grad);color:#fff;box-shadow:0 4px 14px rgba(43,63,228,.3)}
+.pill-ghost{background:var(--tint);color:var(--primary);border:1px solid var(--line)}
+.pill-green{background:var(--green);color:#fff}
+.pill:disabled{opacity:.4;cursor:not-allowed}
+.badge{display:inline-block;font-family:var(--font-mono);font-size:10.5px;font-weight:700;
+  border-radius:999px;padding:3px 9px;letter-spacing:.02em}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-amber{background:var(--amber-bg);color:var(--amber)}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-blue{background:var(--tint);color:var(--primary)}
+.progress{height:7px;background:var(--tint);border-radius:99px;overflow:hidden}
+.progress > i{display:block;height:100%;background:var(--grad);border-radius:99px;transition:width .4s ease}
+.progress.done > i{background:var(--green)}
+.section-title{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text2);margin-bottom:10px;font-family:var(--font-head)}
+.empty{padding:30px 16px;text-align:center;color:var(--text2);font-size:14px;background:var(--tint);
+  border:1px dashed var(--line);border-radius:var(--radius)}
+.empty b{display:block;font-size:22px;margin-bottom:6px}
+select.mini{border:1px solid var(--line);background:var(--surface);border-radius:9px;
+  font-size:12px;padding:4px 6px;color:var(--text);max-width:130px}
+
+/* Puls-Animation für frisch geänderte Elemente */
+@keyframes pulseGlow{0%{box-shadow:0 0 0 0 rgba(43,63,228,.45)}70%{box-shadow:0 0 0 12px rgba(43,63,228,0)}100%{box-shadow:0 0 0 0 rgba(43,63,228,0)}}
+.pulse{animation:pulseGlow 1.6s ease-out 2}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.slide-in{animation:slideIn .35s ease both}
+@keyframes flyOut{to{opacity:0;transform:translateX(40px) scale(.9);max-height:0;margin:0;padding:0}}
+.fly-out{animation:flyOut .5s ease forwards;overflow:hidden}
+@keyframes greenFlash{0%{background:var(--green-bg)}100%{background:transparent}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+/* ============================================================
+   A) LEITSTAND
+   ============================================================ */
+.view{padding:18px 22px 60px;max-width:1500px;margin:0 auto}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.kpi{padding:14px 16px}
+.kpi .kpi-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);
+  font-family:var(--font-head);font-weight:700}
+.kpi .kpi-value{font-family:var(--font-mono);font-weight:800;font-size:28px;margin-top:4px;line-height:1.1}
+.kpi .kpi-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.kpi.kpi-alert .kpi-value{color:var(--red)}
+.kpi.kpi-good .kpi-value{color:var(--green)}
+
+.leit-grid{display:grid;grid-template-columns:1fr 330px;gap:16px;align-items:start}
+@media(max-width:1100px){.leit-grid{grid-template-columns:1fr}}
+
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:900px){.board{grid-template-columns:repeat(2,1fr)}}
+.board-col{background:var(--tint);border:1px solid var(--line);border-radius:var(--radius);padding:10px;min-height:200px}
+.board-col-head{display:flex;justify-content:space-between;align-items:center;padding:2px 6px 10px}
+.board-col-head h3{font-size:12px;letter-spacing:.08em;font-weight:800}
+.board-col-head .count{font-family:var(--font-mono);font-size:11px;background:var(--surface);
+  border:1px solid var(--line);border-radius:99px;padding:2px 8px;font-weight:700}
+.order-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  padding:11px 12px;margin-bottom:9px;box-shadow:0 2px 8px rgba(11,16,32,.05)}
+.order-card.crit{border-color:var(--red);background:var(--red-bg)}
+.order-card.teil{border-color:#E8C15A;background:var(--amber-bg)}
+.order-card .oc-top{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.order-card .oc-id{font-family:var(--font-mono);font-weight:800;font-size:14px}
+.order-card .oc-kunde{font-size:12.5px;color:var(--text2);margin:3px 0 7px}
+.order-card .oc-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;align-items:center}
+.order-card .oc-prog{display:flex;align-items:center;gap:8px;margin-top:8px}
+.order-card .oc-prog .mono{font-size:11px;font-weight:700;white-space:nowrap}
+.order-card .oc-actions{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+
+.side-stack > .card{padding:14px;margin-bottom:14px}
+.picker-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.picker-row:last-child{border-bottom:none}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--grad);color:#fff;display:flex;
+  align-items:center;justify-content:center;font-family:var(--font-head);font-weight:800;font-size:13px;flex-shrink:0}
+.picker-row .pr-info{flex:1;min-width:0}
+.picker-row .pr-name{font-weight:700;font-size:13.5px}
+.picker-row .pr-sub{font-size:11.5px;color:var(--text2)}
+.warn-item{display:flex;gap:9px;align-items:flex-start;padding:9px 10px;border-radius:12px;margin-bottom:7px;font-size:12.5px}
+.warn-item .w-ico{font-size:15px;line-height:1.2}
+.warn-item .w-txt{flex:1}
+.warn-item .w-time{font-family:var(--font-mono);font-size:10px;opacity:.7;display:block}
+.warn-item.w-red{background:var(--red-bg);color:var(--red)}
+.warn-item.w-amber{background:var(--amber-bg);color:var(--amber)}
+.warn-item button{font-size:11px;font-weight:800;border-radius:8px;padding:3px 8px;
+  background:rgba(255,255,255,.7);color:inherit;flex-shrink:0}
+.log-feed{max-height:280px;overflow-y:auto}
+.log-item{display:flex;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:12px}
+.log-item:last-child{border-bottom:none}
+.log-item .mono{color:var(--text2);font-size:11px;flex-shrink:0;padding-top:1px}
+
+/* ============================================================
+   B) PICKER (Geräte-Attrappe, schmales Hochformat)
+   ============================================================ */
+.device-wrap{display:flex;justify-content:center;padding-top:6px}
+.device{width:100%;max-width:420px;background:#12141F;border-radius:38px;padding:14px 10px 18px;
+  box-shadow:0 24px 60px rgba(11,16,32,.28)}
+.device-notch{width:110px;height:6px;border-radius:99px;background:#2a2e40;margin:0 auto 10px}
+.screen{background:var(--bg);border-radius:26px;overflow:hidden;min-height:660px;display:flex;flex-direction:column}
+.pk-head{background:var(--surface);border-bottom:1px solid var(--line);padding:10px 14px}
+.pk-head .pk-user{display:flex;align-items:center;gap:9px}
+.pk-head .pk-stats{font-family:var(--font-mono);font-size:11px;color:var(--text2)}
+.pk-body{flex:1;padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+
+.pk-order-item{width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);
+  border-radius:16px;padding:13px 14px;display:block;box-shadow:var(--shadow)}
+.pk-order-item:active{transform:scale(.98)}
+.pk-order-item .oi-row{display:flex;justify-content:space-between;align-items:center}
+.pk-order-item .oi-id{font-family:var(--font-mono);font-weight:800;font-size:16px}
+.pk-order-item .oi-sub{font-size:12px;color:var(--text2);margin-top:3px}
+.pk-order-item .oi-cut{font-family:var(--font-mono);font-size:11px;font-weight:700;margin-top:6px}
+
+.loc-code{font-family:var(--font-mono);font-weight:800;text-align:center;
+  font-size:clamp(42px,13vw,58px);letter-spacing:-.02em;line-height:1.05;
+  background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.loc-sub{display:flex;justify-content:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+.pk-art{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;text-align:center;box-shadow:var(--shadow)}
+.pk-art .art-emoji{font-size:44px;line-height:1;width:76px;height:76px;border-radius:20px;
+  background:var(--tint);display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px}
+.pk-art .art-name{font-family:var(--font-head);font-weight:800;font-size:19px}
+.pk-art .art-nr{font-family:var(--font-mono);font-size:13px;color:var(--text2);margin-top:2px}
+.pk-qty{font-family:var(--font-mono);font-weight:800;font-size:52px;margin-top:6px;line-height:1}
+.pk-qty small{font-size:20px;color:var(--text2);font-weight:600}
+.scan-box{display:flex;gap:8px}
+.scan-box input{flex:1;border:2px solid var(--line);border-radius:14px;padding:12px 14px;
+  font-family:var(--font-mono);font-size:17px;font-weight:700;background:var(--surface);color:var(--text)}
+.scan-box input:focus{outline:none;border-color:var(--primary)}
+.btn-big{width:100%;border-radius:16px;padding:16px;font-family:var(--font-head);font-weight:800;
+  font-size:16px;letter-spacing:.03em}
+.btn-big:active{transform:scale(.985)}
+.btn-scan{background:var(--grad);color:#fff;box-shadow:0 6px 18px rgba(43,63,228,.35)}
+.btn-problem{background:var(--surface);color:var(--red);border:1.5px solid var(--red);font-size:13px;padding:11px}
+.stepper{display:flex;align-items:center;justify-content:center;gap:14px}
+.stepper button{width:64px;height:64px;border-radius:20px;background:var(--tint);border:1px solid var(--line);
+  font-size:30px;font-weight:800;color:var(--primary)}
+.stepper button:active{transform:scale(.93)}
+.stepper .st-val{font-family:var(--font-mono);font-weight:800;font-size:46px;min-width:80px;text-align:center}
+.pk-progress{padding:10px 14px;background:var(--surface);border-top:1px solid var(--line)}
+.pk-progress .mono{font-size:11px;font-weight:700;color:var(--text2)}
+.flash-green{animation:greenFlash 1s ease}
+.teil-hint{font-size:12px;color:var(--amber);background:var(--amber-bg);border-radius:10px;padding:7px 10px;text-align:center;font-weight:600}
+
+/* Fehlscan-Overlay (Vollbild im Geräte-Screen) */
+.overlay-wrong{position:absolute;inset:0;background:var(--red);color:#fff;z-index:20;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  padding:24px;text-align:center;border-radius:26px;animation:slideIn .2s ease}
+.overlay-wrong .ow-ico{font-size:56px}
+.overlay-wrong h2{font-size:26px;font-weight:900;letter-spacing:.02em}
+.overlay-wrong .ow-codes{font-family:var(--font-mono);font-size:15px;background:rgba(255,255,255,.15);
+  border-radius:14px;padding:12px 16px;line-height:1.7}
+.overlay-wrong button{background:#fff;color:var(--red);border-radius:999px;padding:13px 34px;
+  font-family:var(--font-head);font-weight:800;font-size:15px}
+.screen{position:relative}
+
+/* Modal (Problem melden) */
+.modal-back{position:fixed;inset:0;background:rgba(11,16,32,.45);z-index:100;
+  display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--surface);border-radius:22px;padding:20px;width:100%;max-width:380px;box-shadow:0 30px 80px rgba(11,16,32,.35)}
+.modal h3{font-size:18px;margin-bottom:4px}
+.modal p{font-size:13px;color:var(--text2);margin-bottom:14px}
+.modal .prob-btn{width:100%;text-align:left;border:1px solid var(--line);border-radius:14px;
+  padding:13px 14px;margin-bottom:8px;background:var(--tint);font-weight:700;font-size:14px}
+.modal .prob-btn:active{transform:scale(.98)}
+.modal .cancel{width:100%;padding:11px;color:var(--text2);font-weight:700}
+
+/* Zusammenfassung */
+.summary-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:22px;text-align:center;box-shadow:var(--shadow)}
+.summary-card .sc-ico{font-size:44px}
+.summary-card h2{font-size:21px;margin:8px 0 14px}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+.summary-grid .sg{background:var(--tint);border-radius:14px;padding:10px 6px}
+.summary-grid .sg b{font-family:var(--font-mono);font-size:20px;display:block}
+.summary-grid .sg span{font-size:10.5px;color:var(--text2);text-transform:uppercase;letter-spacing:.05em}
+
+/* ============================================================
+   C) PACKPLATZ / VERLADUNG
+   ============================================================ */
+.pack-view{max-width:980px;margin:0 auto}
+.pack-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+@media(max-width:840px){.pack-grid{grid-template-columns:1fr}}
+.pack-card{padding:16px;margin-bottom:14px}
+.pack-card .pc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.pack-card .pc-id{font-family:var(--font-mono);font-weight:800;font-size:17px}
+.pack-card .pc-kunde{font-size:13px;color:var(--text2);margin-bottom:10px}
+.check-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;
+  border:1px solid var(--line);margin-bottom:6px;background:var(--surface);cursor:pointer;user-select:none}
+.check-row.checked{background:var(--green-bg);border-color:var(--green)}
+.check-row .cb{width:24px;height:24px;border-radius:8px;border:2px solid var(--line);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:14px;background:var(--surface)}
+.check-row.checked .cb{background:var(--green);border-color:var(--green)}
+.check-row .cr-name{flex:1;font-size:13.5px;font-weight:600}
+.check-row .cr-qty{font-family:var(--font-mono);font-weight:800;font-size:14px}
+.check-row .cr-teil{font-size:10.5px}
+.pack-select{display:flex;gap:7px;margin:12px 0;flex-wrap:wrap}
+.pack-select button{border:1.5px solid var(--line);border-radius:999px;padding:8px 15px;
+  font-weight:700;font-size:12.5px;background:var(--surface);color:var(--text2)}
+.pack-select button.sel{background:var(--grad);color:#fff;border-color:transparent}
+.tour-group{margin-bottom:18px}
+.tour-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;
+  background:var(--tint);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+.tour-head .th-name{font-family:var(--font-head);font-weight:800;font-size:14px}
+.tour-head .mono{font-size:12px;font-weight:700;color:var(--text2)}
+.load-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid var(--line);
+  border-radius:14px;margin-bottom:7px;background:var(--surface);box-shadow:0 2px 8px rgba(11,16,32,.04)}
+.load-row .lr-info{flex:1}
+.load-row .lr-id{font-family:var(--font-mono);font-weight:800;font-size:14px}
+.load-row .lr-sub{font-size:11.5px;color:var(--text2)}
+.tour-done{background:var(--green-bg);border:1.5px solid var(--green);color:var(--green);
+  border-radius:var(--radius);padding:18px;text-align:center;font-family:var(--font-head);
+  font-weight:800;font-size:17px;animation:slideIn .4s ease}
+
+/* ============================================================
+   D) ADMIN / EINSTELLUNGEN
+   ============================================================ */
+.admin-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+.admin-tab{border:1px solid var(--line);background:var(--surface);border-radius:999px;
+  padding:8px 16px;font-family:var(--font-head);font-weight:700;font-size:12.5px;color:var(--text2)}
+.admin-tab.active{background:var(--grad);color:#fff;border-color:transparent}
+.admin-card{padding:16px;margin-bottom:16px}
+.tbl{width:100%}
+.tbl-row{display:grid;gap:10px;align-items:center;padding:9px 6px;border-bottom:1px solid var(--line);font-size:13px}
+.tbl-row:last-child{border-bottom:none}
+.tbl-head{font-family:var(--font-head);font-weight:800;font-size:10.5px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--text2);border-bottom:2px solid var(--line)}
+.tbl-art{grid-template-columns:70px 1fr 110px 120px 90px 130px}
+.tbl-ord{grid-template-columns:80px 1fr 100px 90px 110px 130px}
+.tbl-pers{grid-template-columns:44px 1fr 150px 120px 100px}
+.tbl-tour{grid-template-columns:1fr 130px 110px 90px}
+.tbl-kat{grid-template-columns:60px 1fr 90px}
+@media(max-width:760px){.tbl-art,.tbl-ord{grid-template-columns:1fr 1fr;row-gap:4px}.tbl-head{display:none}}
+.icon-btn{width:30px;height:30px;border-radius:9px;background:var(--tint);border:1px solid var(--line);
+  font-size:13px;display:inline-flex;align-items:center;justify-content:center}
+.icon-btn.danger{color:var(--red);background:var(--red-bg);border-color:transparent}
+.icon-btn:disabled{opacity:.3;cursor:not-allowed}
+.stock-mini{display:inline-flex;align-items:center;gap:5px}
+.stock-mini button{width:24px;height:24px;border-radius:7px;background:var(--tint);
+  border:1px solid var(--line);font-weight:800;color:var(--primary);font-size:14px}
+.stock-mini b{font-family:var(--font-mono);min-width:30px;text-align:center}
+.stock-mini b.low{color:var(--red)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.form-grid .full{grid-column:1/-1}
+.field label{display:block;font-size:11px;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--text2);margin-bottom:4px;font-family:var(--font-head)}
+.field input,.field select{width:100%;border:1.5px solid var(--line);border-radius:11px;
+  padding:9px 11px;font-size:14px;background:var(--surface);color:var(--text)}
+.field input:focus,.field select:focus{outline:none;border-color:var(--primary)}
+.setting-row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.setting-row:last-child{border-bottom:none}
+.setting-row .sr-info{flex:1}
+.setting-row .sr-name{font-weight:700;font-size:14px}
+.setting-row .sr-desc{font-size:12px;color:var(--text2);margin-top:1px}
+.setting-row input[type=number],.setting-row select{border:1.5px solid var(--line);border-radius:10px;
+  padding:7px 10px;font-family:var(--font-mono);font-weight:700;width:90px;font-size:14px;background:var(--surface)}
+.setting-row select{width:auto;font-family:var(--font-body)}
+.setting-row input[type=text]{border:1.5px solid var(--line);border-radius:10px;padding:7px 10px;width:170px;font-size:14px}
+.switch{position:relative;width:48px;height:28px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.switch i{position:absolute;inset:0;background:var(--line);border-radius:99px;transition:.2s;cursor:pointer}
+.switch i:before{content:"";position:absolute;width:22px;height:22px;border-radius:50%;
+  background:#fff;top:3px;left:3px;transition:.2s;box-shadow:0 1px 4px rgba(11,16,32,.25)}
+.switch input:checked + i{background:var(--grad)}
+.switch input:checked + i:before{transform:translateX(20px)}
+.pos-builder{background:var(--tint);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+.pos-line{display:flex;justify-content:space-between;align-items:center;gap:8px;
+  padding:6px 8px;background:var(--surface);border-radius:10px;margin-bottom:5px;font-size:13px}
+.add-inline{display:flex;gap:8px;margin-top:8px}
+.add-inline select,.add-inline input{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface);font-size:13px}
+.add-inline select{flex:1}
+.add-inline input{width:70px;font-family:var(--font-mono);font-weight:700}
+
+/* ============================================================
+   ÜBERARBEITUNG: Karten-Listen statt Tabellen + Mobil-Layout
+   ============================================================ */
+.help-note{background:var(--tint);border:1px solid var(--line);border-radius:12px;
+  padding:10px 13px;font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.45}
+.item-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+  padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(11,16,32,.05)}
+.ic-head{display:flex;align-items:center;gap:10px}
+.ic-emoji{font-size:24px;width:44px;height:44px;border-radius:13px;background:var(--tint);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ic-title{font-family:var(--font-head);font-weight:800;font-size:15.5px;flex:1;min-width:0}
+.ic-sub{font-size:12.5px;color:var(--text2);font-weight:400;font-family:var(--font-body);margin-top:1px}
+.ic-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.ic-actions{display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap}
+.btn-sm{border-radius:999px;padding:9px 16px;font-weight:700;font-size:13px;font-family:var(--font-head)}
+.btn-sm:active{transform:scale(.97)}
+.btn-edit{background:var(--tint);color:var(--primary);border:1px solid var(--line)}
+.btn-del{background:var(--red-bg);color:var(--red)}
+.btn-sm:disabled{opacity:.35;cursor:not-allowed}
+.stock-big{display:inline-flex;align-items:center;gap:8px;background:var(--tint);
+  border:1px solid var(--line);border-radius:999px;padding:4px}
+.stock-big button{width:38px;height:38px;border-radius:50%;background:var(--surface);
+  border:1px solid var(--line);font-weight:800;color:var(--primary);font-size:19px}
+.stock-big button:active{transform:scale(.92)}
+.stock-big b{font-family:var(--font-mono);min-width:36px;text-align:center;font-size:16px}
+.stock-big b.low{color:var(--red)}
+.stock-big .sb-label{font-size:10.5px;color:var(--text2);padding-right:8px}
+.inp{border:1.5px solid var(--line);border-radius:11px;padding:9px 11px;font-size:14px;
+  background:var(--surface);color:var(--text);width:100%}
+.inp:focus{outline:none;border-color:var(--primary)}
+.inp-time{font-family:var(--font-mono);font-weight:700;width:auto}
+.form-err{display:none;background:var(--red-bg);color:var(--red);border-radius:11px;
+  padding:10px 13px;font-size:13px;font-weight:600;margin-bottom:11px}
+.search-wrap{margin-bottom:12px}
+.confirm-txt{font-size:14.5px;line-height:1.5;margin-bottom:16px}
+.btn-danger-big{width:100%;border-radius:16px;padding:15px;font-family:var(--font-head);
+  font-weight:800;font-size:15px;background:var(--red);color:#fff}
+/* --- Mobil: alles einspaltig, große Touch-Flächen --- */
+@media(max-width:700px){
+  .appbar{gap:8px;padding:8px 12px}
+  .logo-name{font-size:15px}
+  .clock{font-size:14px;padding:4px 10px}
+  .role-tabs{width:100%;order:3}
+  .role-tab{flex:1;padding:6px 4px}
+  .role-tab .rt-name{font-size:10.5px}
+  .role-tab .rt-dev{display:none}
+  .view{padding:12px 12px 60px}
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .kpi .kpi-value{font-size:21px}
+  .board{grid-template-columns:1fr}
+  .board-col{min-height:auto}
+  .leit-grid{grid-template-columns:1fr}
+  .pack-grid{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr 1fr}
+  .setting-row{flex-wrap:wrap}
+  .setting-row .sr-info{flex-basis:100%}
+  .admin-tab{padding:7px 12px;font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">Demo-Modus – alle Daten sind Beispieldaten · <span class="mono">In-Memory, kein Server</span></div>
+
+<header class="appbar">
+  <div class="logo"><span class="logo-dot"></span><span class="logo-name">PICKFLOW</span></div>
+  <nav class="role-tabs" id="roleTabs">
+    <button class="role-tab active" data-role="leitstand" onclick="setRole('leitstand')">
+      <span class="rt-name">LEITSTAND</span><span class="rt-dev">Monitor</span></button>
+    <button class="role-tab" data-role="picker" onclick="setRole('picker')">
+      <span class="rt-name">PICKER</span><span class="rt-dev">Handscanner</span></button>
+    <button class="role-tab" data-role="packplatz" onclick="setRole('packplatz')">
+      <span class="rt-name">PACKPLATZ</span><span class="rt-dev">Tablet</span></button>
+    <button class="role-tab" data-role="admin" onclick="setRole('admin')">
+      <span class="rt-name">VERWALTUNG</span><span class="rt-dev">Büro-PC</span></button>
+  </nav>
+  <div class="clock"><small>Live</small><span id="clockTime">--:--:--</span></div>
+</header>
+
+<main>
+  <div id="view-leitstand" class="view"></div>
+  <div id="view-picker" class="view" style="display:none"></div>
+  <div id="view-packplatz" class="view pack-view" style="display:none"></div>
+  <div id="view-admin" class="view" style="display:none;max-width:1050px"></div>
+</main>
+
+<div id="modalRoot"></div>
+
+<script>
+/* ============================================================
+   PICKFLOW – Anwendungslogik
+   Gemeinsamer In-Memory-State, alle Ansichten rendern daraus.
+   ============================================================ */
+"use strict";
+
+/* ---------- Hilfsfunktionen ---------- */
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2, "0");
+const fmtTime = d => pad(d.getHours()) + ":" + pad(d.getMinutes());
+const fmtTimeS = d => fmtTime(d) + ":" + pad(d.getSeconds());
+const inMin = m => new Date(Date.now() + m * 60000);          // Zeitpunkt in m Minuten
+const agoMin = m => new Date(Date.now() - m * 60000);          // Zeitpunkt vor m Minuten
+function fmtCountdown(ms) {                                    // Restzeit menschenlesbar
+  if (ms <= 0) return "00:00";
+  const s = Math.floor(ms / 1000);
+  if (s >= 3600) return Math.floor(s / 3600) + "h " + pad(Math.floor((s % 3600) / 60)) + "m";
+  return pad(Math.floor(s / 60)) + ":" + pad(s % 60);
+}
+function locCode(lp) { return "G" + pad(lp.gang) + "-R" + pad(lp.regal) + "-B" + lp.boden; }
+function esc(t) { return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+const PRIO_LABEL = { normal:"Normal", eilig:"Eilig", express:"⚡ Express" };
+const SHIFT_START = agoMin(240); // Schichtbeginn vor 4 h (für Picks/Stunde)
+
+/* ============================================================
+   BETRIEBS-KONFIGURATION – alles unter "Verwaltung" einstellbar
+   ============================================================ */
+const config = {
+  firma: "PICKFLOW",             // Anzeigename in der App-Leiste
+  avgPickSec: 50,                // Ø-Zeit pro Pick (Cut-off-Risikoformel)
+  versandPufferMin: 16,          // Puffer für Kontrolle + Packen + Verladen
+  abfahrtWarnMin: 15,            // KPI "Nächste Abfahrt" färbt sich rot ab dieser Restzeit
+  zielGenauigkeit: 99.0,         // Ziel-Pick-Genauigkeit in % (KPI-Ampel)
+  ueberpicken: false,            // Darf mehr als die Soll-Menge bestätigt werden?
+  scanSimButton: true,           // "SCAN SIMULIEREN"-Button in der Picker-Ansicht
+  routeMode: "schlange",         // "schlange" (Serpentine) oder "linear" (Gang+Regal aufsteigend)
+  kontrollzaehlung: true,        // Packplatz: Positionen müssen abgehakt werden
+  kategorien: [
+    { name:"Werkzeug", emoji:"🔧" }, { name:"Elektro", emoji:"🔌" },
+    { name:"Sanitär", emoji:"🚿" }, { name:"Befestigung", emoji:"🔩" },
+    { name:"Farben", emoji:"🎨" },
+  ],
+  packstuecke: ["Karton S","Karton M","Karton L","Palette"],
+};
+function katEmoji(name) { const k = config.kategorien.find(k => k.name === name); return k ? k.emoji : "📦"; }
+
+/* ============================================================
+   DEMO-DATEN
+   ============================================================ */
+/* --- Artikel: 28 Stück über 6 Gänge, 3 bewusst unter Mindestbestand --- */
+function A(id, nr, name, kat, g, r, b, bestand, mind, gewicht) {
+  return { id, artikelnummer: nr, name, kategorie: kat,
+           lagerplatz: { gang: g, regal: r, boden: b }, bestand, mindestbestand: mind, gewicht };
+}
+const artikel = [
+  A("a01","1042","Akkuschrauber 18V","Werkzeug",1, 2,1, 24, 8, 1.6),
+  A("a02","1077","Schlagbohrmaschine 850W","Werkzeug",1, 5,2, 11, 4, 2.9),
+  A("a03","1123","Wasserwaage 60cm","Werkzeug",1, 9,1, 32,10, 0.7),
+  A("a04","1188","Hammer 500g Fiberglas","Werkzeug",1,12,3, 45,15, 0.6),
+  A("a05","1215","Bit-Set 32-teilig","Werkzeug",1,14,2,  6, 8, 0.3), /* unter Mindestbestand! */
+  A("a06","2031","Kabeltrommel 25m","Elektro",2, 3,1, 18, 6, 4.2),
+  A("a07","2087","LED-Baustrahler 30W","Elektro",2, 6,2, 22, 8, 1.1),
+  A("a08","2114","Steckdosenleiste 6-fach","Elektro",2, 8,1, 40,12, 0.5),
+  A("a09","2156","Installationskabel NYM 3x1,5","Elektro",2,11,3, 15, 5,12.0),
+  A("a10","2199","Spannungsprüfer digital","Elektro",2,13,1, 28,10, 0.1),
+  A("a11","3022","Dichtungsring-Set","Sanitär",3, 2,2, 55,20, 0.2),
+  A("a12","3068","Eckventil 1/2 Zoll","Sanitär",3, 5,1, 34,12, 0.3),
+  A("a13","3095","Flexschlauch 50cm","Sanitär",3, 8,3, 26,10, 0.4),
+  A("a14","3140","Siphon-Set Waschbecken","Sanitär",3,11,2, 19, 6, 0.6),
+  A("a15","3177","Hanf- und Fermit-Paste","Sanitär",3,14,1,  4,10, 0.3), /* unter Mindestbestand! */
+  A("a16","4015","Spax-Schrauben 4x40 (500)","Befestigung",4, 1,1, 60,20, 1.8),
+  A("a17","4052","Dübel-Sortiment 8mm","Befestigung",4, 4,2, 48,15, 0.9),
+  A("a18","4098","Gewindestange M10 1m","Befestigung",4, 7,3, 30,10, 0.7),
+  A("a19","4126","Winkelverbinder 90x90","Befestigung",4,10,1, 72,25, 0.2),
+  A("a20","4171","Kabelbinder 300mm (100)","Befestigung",4,13,2, 38,12, 0.4),
+  A("a21","5008","Wandfarbe Weiß 10L","Farben",5, 2,1, 26, 8,14.5),
+  A("a22","5044","Acryl-Dichtmasse weiß","Farben",5, 5,2, 44,15, 0.4),
+  A("a23","5081","Malerkrepp 30mm","Farben",5, 8,1, 66,20, 0.1),
+  A("a24","5127","Abdeckvlies 1x25m","Farben",5,11,3, 17, 6, 2.2),
+  A("a25","5163","Lackspray RAL9005 matt","Farben",5,14,2,  3, 6, 0.5), /* unter Mindestbestand! */
+  A("a26","6019","Arbeitshandschuhe Gr. 9","Werkzeug",6, 3,1, 90,30, 0.1),
+  A("a27","6057","Cuttermesser 18mm Profi","Werkzeug",6, 7,2, 52,18, 0.2),
+  A("a28","6103","Werkzeugkoffer leer 20 Zoll","Werkzeug",6,12,1, 13, 5, 3.4),
+];
+/* Dynamische Lookups (Proxy), damit auch neu angelegte Datensätze sofort auffindbar sind */
+const artById = new Proxy({}, { get: (_, id) => artikel.find(a => a.id === id) });
+const artByNr = new Proxy({}, { get: (_, nr) => artikel.find(a => a.artikelnummer === nr) });
+
+/* --- Picker --- */
+const pickers = [
+  { id:"p1", name:"Lena K.",   kuerzel:"LK", picksHeute:187, fehlerHeute:2, status:"aktiv" },
+  { id:"p2", name:"Ahmed B.",  kuerzel:"AB", picksHeute:203, fehlerHeute:1, status:"aktiv" },
+  { id:"p3", name:"Du (Demo)", kuerzel:"DU", picksHeute:214, fehlerHeute:2, status:"aktiv" },
+];
+const pickerById = new Proxy({}, { get: (_, id) => pickers.find(p => p.id === id) });
+const ME = "p3"; // Der aktive Account in der Picker-Ansicht
+
+/* --- Touren --- */
+const touren = [
+  { id:"nord", name:"Tour Nord", abfahrt: inMin(35) },
+  { id:"sued", name:"Tour Süd",  abfahrt: inMin(120) },
+];
+const tourById = new Proxy({}, { get: (_, id) => touren.find(t => t.id === id) });
+
+/* --- Aufträge --- */
+function P(artikelId, soll, status = "offen", ist = null) {
+  return { artikelId, sollMenge: soll, istMenge: ist, status, kontrolle:false };
+}
+function O(id, kunde, prio, cutoffMin, tour, positionen, status, picker, extra = {}) {
+  return Object.assign({ id, kunde, prioritaet: prio, cutoff: inMin(cutoffMin), tour,
+    positionen, status, picker, packstueck:null,
+    zeiten:{ gestartet:null, fertig:null } }, extra);
+}
+const orders = [
+  /* 5 offene – A-2295 ist der Express-Auftrag mit knappem Cut-off (~20 min) */
+  O("A-2295","Baustoff Hartmann GmbH","express", 20,"nord",
+    [P("a01",2),P("a06",1),P("a16",4),P("a11",3),P("a21",2),P("a07",2)],"offen",null),
+  O("A-2296","Elektro Wienand","normal", 95,"sued",
+    [P("a08",5),P("a10",2),P("a09",1),P("a20",3)],"offen",null),
+  O("A-2297","Sanitärtechnik Roth","eilig", 55,"nord",
+    [P("a12",4),P("a13",2),P("a14",1),P("a11",5),P("a15",2)],"offen",null),
+  O("A-2298","Malermeister Öztürk","normal",110,"sued",
+    [P("a21",4),P("a22",6),P("a23",8),P("a24",2)],"offen",null),
+  O("A-2299","Hausmeisterservice Klein","normal",100,"sued",
+    [P("a04",1),P("a26",3),P("a27",2),P("a17",1),P("a05",1)],"offen",null),
+  /* 2 in Kommissionierung (teilweise gepickt) */
+  O("A-2292","Tischlerei Brandt","eilig", 45,"nord",
+    [P("a16",6,"gepickt",6),P("a17",2,"gepickt",2),P("a18",3),P("a19",4),P("a02",1)],
+    "inKommissionierung","p1",{ zeiten:{ gestartet: agoMin(9), fertig:null } }),
+  O("A-2293","GaLaBau Petersen","normal", 90,"sued",
+    [P("a26",4,"gepickt",4),P("a20",2),P("a28",1)],
+    "inKommissionierung","p2",{ zeiten:{ gestartet: agoMin(5), fertig:null } }),
+  /* 2 am Packplatz */
+  O("A-2290","Dachdeckerei Simon","eilig", 30,"nord",
+    [P("a03",2,"gepickt",2),P("a04",2,"gepickt",2),P("a16",2,"teilpick",1)],
+    "amPackplatz","p1",{ zeiten:{ gestartet: agoMin(38), fertig: agoMin(22) } }),
+  O("A-2291","Fliesen Colak","normal", 80,"sued",
+    [P("a11",6,"gepickt",6),P("a22",3,"gepickt",3),P("a12",2,"gepickt",2)],
+    "amPackplatz","p2",{ zeiten:{ gestartet: agoMin(50), fertig: agoMin(31) } }),
+  /* 1 gepackt, 1 bereits verladen */
+  O("A-2288","Zimmerei Vogel","normal", 28,"nord",
+    [P("a02",1,"gepickt",1),P("a18",2,"gepickt",2)],
+    "gepackt","p2",{ packstueck:"Karton M", zeiten:{ gestartet: agoMin(75), fertig: agoMin(60) } }),
+  O("A-2287","Bauhof Stadt Lünen","normal", 15,"nord",
+    [P("a21",6,"gepickt",6),P("a06",2,"gepickt",2)],
+    "verladen","p1",{ packstueck:"Palette", zeiten:{ gestartet: agoMin(120), fertig: agoMin(95) } }),
+];
+const orderById = id => orders.find(o => o.id === id);
+
+/* --- Globaler State --- */
+const state = {
+  role: "leitstand",
+  scansTotal: 610, scansOk: 605,            // Historie heute → realistische Start-Genauigkeit
+  warnings: [],                             // {id,type:'red'|'amber',ico,text,time,acked}
+  log: [],                                  // {time,text} – neueste zuerst
+  session: null,                            // aktive Pick-Session von "Du (Demo)"
+  critical: new Set(),                      // Auftrags-IDs mit Cut-off-Risiko
+  qty: 0,                                   // aktueller Stepper-Wert
+  warnSeq: 0,
+};
+
+function addLog(text, when = new Date()) {
+  state.log.unshift({ time: fmtTime(when), text });
+  if (state.log.length > 60) state.log.pop();
+}
+function addWarning(type, ico, text) {
+  state.warnings.unshift({ id: "w" + (++state.warnSeq), type, ico, text, time: fmtTime(new Date()), acked:false });
+  addLog(ico + " " + text);
+}
+
+/* Start-Ereignisse & -Warnungen */
+addLog("Schichtbeginn – 3 Picker angemeldet", SHIFT_START);
+addLog("Lena K. hat A-2292 übernommen", agoMin(9));
+addLog("Ahmed B. hat A-2293 übernommen", agoMin(5));
+artikel.filter(a => a.bestand < a.mindestbestand).forEach(a =>
+  addWarning("amber","📦", a.name + " (" + a.artikelnummer + "): Bestand " + a.bestand +
+             " unter Mindestbestand " + a.mindestbestand));
+
+/* ============================================================
+   BERECHNUNGEN
+   ============================================================ */
+/* Laufoptimierte Reihenfolge: Gang aufsteigend, Schlangenlogik –
+   ungerade Gänge Regal aufsteigend, gerade Gänge Regal absteigend. */
+function routeSort(posIdx, order) {
+  return posIdx.slice().sort((i, j) => {
+    const A = artById[order.positionen[i].artikelId].lagerplatz;
+    const B = artById[order.positionen[j].artikelId].lagerplatz;
+    if (A.gang !== B.gang) return A.gang - B.gang;
+    /* "schlange": ungerade Gänge aufwärts, gerade abwärts · "linear": immer aufwärts */
+    const dir = (config.routeMode === "schlange" && A.gang % 2 === 0) ? -1 : 1;
+    if (A.regal !== B.regal) return (A.regal - B.regal) * dir;
+    return A.boden - B.boden;
+  });
+}
+function doneCount(o) { return o.positionen.filter(p => p.status === "gepickt" || p.status === "teilpick").length; }
+function openCount(o) { return o.positionen.filter(p => p.status === "offen").length; }
+function hasTeilpick(o) { return o.positionen.some(p => p.status === "teilpick" || p.status === "problem"); }
+function accuracy() { return state.scansTotal ? (state.scansOk / state.scansTotal * 100) : 100; }
+function pickerAcc(p) {
+  const tot = p.picksHeute + p.fehlerHeute;
+  return tot ? (p.picksHeute / tot * 100).toFixed(1) : "100.0";
+}
+function picksPerHour() {
+  const h = (Date.now() - SHIFT_START.getTime()) / 3600000;
+  const total = pickers.reduce((s, p) => s + p.picksHeute, 0);
+  return Math.round(total / h);
+}
+function nextTour() { return touren.filter(t => t.abfahrt > new Date()).sort((a,b)=>a.abfahrt-b.abfahrt)[0] || null; }
+/* Cut-off-Risiko: verbleibende Positionen × Ø-Zeit pro Pick (+ Puffer für
+   Packen & Verladen, denn der Auftrag muss zum Cut-off AUF dem LKW sein)
+   > Zeit bis Cut-off  →  Warnung */
+function isCritical(o) {
+  if (o.status !== "offen" && o.status !== "inKommissionierung") return false;
+  const restMs = o.cutoff - new Date();
+  if (restMs <= 0) return true;
+  return openCount(o) * config.avgPickSec * 1000 + config.versandPufferMin * 60000 > restMs;
+}
+function checkCriticals() {
+  let changed = false;
+  for (const o of orders) {
+    const crit = isCritical(o);
+    if (crit && !state.critical.has(o.id)) {
+      state.critical.add(o.id); changed = true;
+      addWarning("red","⏱", o.id + " (" + o.kunde + ") droht den Cut-off " + fmtTime(o.cutoff) + " zu reißen");
+    } else if (!crit && state.critical.has(o.id)) {
+      state.critical.delete(o.id); changed = true;
+    }
+  }
+  return changed;
+}
+function pulse(o) { o._pulse = Date.now(); }
+function pulseCls(o) { return (o._pulse && Date.now() - o._pulse < 2500) ? " pulse" : ""; }
+
+/* ============================================================
+   RENDER – zentraler Einstieg
+   ============================================================ */
+function setRole(role) {
+  state.role = role;
+  document.querySelectorAll(".role-tab").forEach(t => t.classList.toggle("active", t.dataset.role === role));
+  $("#view-leitstand").style.display  = role === "leitstand" ? "" : "none";
+  $("#view-picker").style.display     = role === "picker" ? "" : "none";
+  $("#view-packplatz").style.display  = role === "packplatz" ? "" : "none";
+  $("#view-admin").style.display      = role === "admin" ? "" : "none";
+  render();
+}
+function render() {
+  checkCriticals();
+  $(".logo-name").textContent = config.firma;   // Firmenname aus den Einstellungen
+  if (state.role === "leitstand") renderLeitstand();
+  if (state.role === "picker")    renderPicker();
+  if (state.role === "packplatz") renderPackplatz();
+  if (state.role === "admin")     renderAdmin();
+}
+
+/* ============================================================
+   A) LEITSTAND
+   ============================================================ */
+const COLS = [
+  { key:"offen", label:"OFFEN", match: o => o.status === "offen" },
+  { key:"komm",  label:"IN KOMMISSIONIERUNG", match: o => o.status === "inKommissionierung" || o.status === "amPackplatz" },
+  { key:"gepackt", label:"GEPACKT", match: o => o.status === "gepackt" },
+  { key:"verladen", label:"VERLADEN", match: o => o.status === "verladen" },
+];
+function prioBadge(o) {
+  if (o.prioritaet === "express") return '<span class="badge badge-red">⚡ EXPRESS</span>';
+  if (o.prioritaet === "eilig")   return '<span class="badge badge-amber">EILIG</span>';
+  return '<span class="badge badge-blue">NORMAL</span>';
+}
+function orderCardHTML(o) {
+  const done = doneCount(o), total = o.positionen.length;
+  const crit = state.critical.has(o.id);
+  const teil = hasTeilpick(o) && !crit;
+  const pk = o.picker ? pickerById[o.picker].name : null;
+  const cutStr = '<span class="badge ' + (crit ? "badge-red" : "badge-blue") + ' mono">Cut-off ' +
+    fmtTime(o.cutoff) + ' · <span data-cutoff="' + o.cutoff.getTime() + '">' + fmtCountdown(o.cutoff - new Date()) + '</span></span>';
+  let actions = "";
+  if (o.status === "offen") {
+    actions = '<select class="mini" onchange="assignPicker(\'' + o.id + '\', this.value)">' +
+      '<option value="">Frei zur Abholung</option>' +
+      pickers.map(p => '<option value="' + p.id + '"' + (o.picker === p.id ? " selected" : "") + '>' + esc(p.name) + '</option>').join("") +
+      '</select>' +
+      '<select class="mini" onchange="setPriority(\'' + o.id + '\', this.value)">' +
+      ["normal","eilig","express"].map(v => '<option value="' + v + '"' + (o.prioritaet === v ? " selected" : "") + '>' + PRIO_LABEL[v].replace("⚡ ","") + '</option>').join("") +
+      '</select>';
+  }
+  return '<div class="order-card slide-in' + (crit ? " crit" : "") + (teil ? " teil" : "") + pulseCls(o) + '">' +
+    '<div class="oc-top"><span class="oc-id">' + o.id + '</span>' + prioBadge(o) + '</div>' +
+    '<div class="oc-kunde">' + esc(o.kunde) + '</div>' +
+    '<div class="oc-prog"><div class="progress' + (done === total ? " done" : "") + '" style="flex:1"><i style="width:' +
+      Math.round(done / total * 100) + '%"></i></div><span class="mono">' + done + '/' + total + '</span></div>' +
+    '<div class="oc-meta">' + cutStr +
+      '<span class="badge badge-blue mono">' + tourById[o.tour].name + '</span>' +
+      (pk ? '<span class="badge badge-green">👤 ' + esc(pk) + '</span>' : (o.status === "offen" ? '<span class="badge badge-amber">frei</span>' : "")) +
+      (o.status === "amPackplatz" ? '<span class="badge badge-amber">Am Packplatz</span>' : "") +
+      (teil ? '<span class="badge badge-amber">Teilpick</span>' : "") +
+    '</div>' +
+    (actions ? '<div class="oc-actions">' + actions + '</div>' : "") +
+  '</div>';
+}
+function renderLeitstand() {
+  const nt = nextTour();
+  const heute = orders.length;
+  const erledigt = orders.filter(o => o.status === "gepackt" || o.status === "verladen").length;
+  const acc = accuracy();
+  const kpis =
+    kpi("Aufträge heute", erledigt + " / " + heute, "erledigt / gesamt", "") +
+    kpi("Pick-Genauigkeit", acc.toFixed(1) + " %", state.scansOk + " von " + state.scansTotal + " Scans korrekt", acc >= config.zielGenauigkeit ? "kpi-good" : (acc < config.zielGenauigkeit - 2 ? "kpi-alert" : "")) +
+    kpi("Ø Picks / Stunde", picksPerHour(), "über alle Picker", "") +
+    (nt ? kpi("Nächste Abfahrt", '<span data-cutoff="' + nt.abfahrt.getTime() + '">' + fmtCountdown(nt.abfahrt - new Date()) + '</span>',
+          nt.name + " · " + fmtTime(nt.abfahrt) + " Uhr", (nt.abfahrt - new Date() < config.abfahrtWarnMin*60000) ? "kpi-alert" : "")
+        : kpi("Nächste Abfahrt","–","alle Touren unterwegs",""));
+
+  const board = COLS.map(c => {
+    const list = orders.filter(c.match).sort((a,b) => a.cutoff - b.cutoff);
+    return '<div class="board-col"><div class="board-col-head"><h3>' + c.label +
+      '</h3><span class="count">' + list.length + '</span></div>' +
+      (list.length ? list.map(orderCardHTML).join("") :
+        '<div class="empty"><b>🎉</b>Keine Aufträge – gut gemacht!</div>') + '</div>';
+  }).join("");
+
+  const pkRows = pickers.map(p => {
+    const cur = orders.find(o => o.picker === p.id && o.status === "inKommissionierung");
+    const stat = p.status === "problem" ? '<span class="badge badge-red">Problem</span>'
+               : p.status === "pause" ? '<span class="badge badge-amber">Pause</span>'
+               : '<span class="badge badge-green">aktiv</span>';
+    return '<div class="picker-row"><div class="avatar">' + p.kuerzel + '</div>' +
+      '<div class="pr-info"><div class="pr-name">' + esc(p.name) + '</div>' +
+      '<div class="pr-sub">' + (cur ? "Arbeitet an <b class=\"mono\">" + cur.id + "</b>" : "Kein aktiver Auftrag") +
+      ' · <span class="mono">' + p.picksHeute + ' Picks · ' + pickerAcc(p) + ' %</span></div></div>' + stat + '</div>';
+  }).join("");
+
+  const warns = state.warnings.filter(w => !w.acked);
+  const warnHTML = warns.length ? warns.map(w =>
+    '<div class="warn-item ' + (w.type === "red" ? "w-red" : "w-amber") + ' slide-in">' +
+    '<span class="w-ico">' + w.ico + '</span><span class="w-txt">' + esc(w.text) +
+    '<span class="w-time">' + w.time + '</span></span>' +
+    '<button onclick="ackWarning(\'' + w.id + '\')" title="Quittieren">✓ OK</button></div>').join("")
+    : '<div class="empty"><b>✅</b>Keine offenen Warnungen</div>';
+
+  const logHTML = state.log.map(l =>
+    '<div class="log-item"><span class="mono">' + l.time + '</span><span>' + esc(l.text) + '</span></div>').join("");
+
+  $("#view-leitstand").innerHTML =
+    '<div class="kpi-row">' + kpis + '</div>' +
+    '<div class="leit-grid"><div class="board">' + board + '</div>' +
+    '<div class="side-stack">' +
+      '<div class="card"><div class="section-title">Picker-Übersicht</div>' + pkRows + '</div>' +
+      '<div class="card"><div class="section-title">Warnungen (' + warns.length + ')</div>' + warnHTML + '</div>' +
+      '<div class="card"><div class="section-title">Ereignis-Log</div><div class="log-feed">' + logHTML + '</div></div>' +
+    '</div></div>';
+}
+function kpi(label, value, sub, cls) {
+  return '<div class="card kpi ' + cls + '"><div class="kpi-label">' + label +
+    '</div><div class="kpi-value">' + value + '</div><div class="kpi-sub">' + sub + '</div></div>';
+}
+/* Leitstand-Aktionen */
+function assignPicker(orderId, pickerId) {
+  const o = orderById(orderId);
+  o.picker = pickerId || null;
+  pulse(o);
+  addLog(pickerId ? o.id + " wurde " + pickerById[pickerId].name + " zugewiesen"
+                  : o.id + ' steht wieder "Frei zur Abholung"');
+  render();
+}
+function setPriority(orderId, prio) {
+  const o = orderById(orderId);
+  o.prioritaet = prio; pulse(o);
+  addLog("Priorität von " + o.id + " auf " + PRIO_LABEL[prio].replace("⚡ ","") + " geändert");
+  render();
+}
+function ackWarning(id) {
+  const w = state.warnings.find(w => w.id === id);
+  if (w) { w.acked = true; addLog("Warnung quittiert: " + w.text.slice(0, 60)); }
+  render();
+}
+
+/* ============================================================
+   B) PICKER
+   ============================================================ */
+function myOrders() { /* freie + mir zugewiesene, Express zuerst, dann Cut-off */
+  const rank = { express:0, eilig:1, normal:2 };
+  return orders
+    .filter(o => o.status === "offen" && (!o.picker || o.picker === ME))
+    .sort((a,b) => rank[a.prioritaet] - rank[b.prioritaet] || a.cutoff - b.cutoff);
+}
+function pkHead() {
+  const me = pickerById[ME];
+  return '<div class="pk-head"><div class="pk-user"><div class="avatar">' + me.kuerzel + '</div>' +
+    '<div><div style="font-weight:800;font-family:var(--font-head)">' + esc(me.name) + '</div>' +
+    '<div class="pk-stats">Heute: ' + me.picksHeute + ' Picks · ' + pickerAcc(me).replace(".", ",") + ' %</div></div>' +
+    '<span class="badge badge-green" style="margin-left:auto">aktiv</span></div></div>';
+}
+function renderPicker() {
+  let body = "", footer = "", overlay = "";
+  const s = state.session;
+
+  if (!s) {
+    /* ---- Auftrag holen ---- */
+    const list = myOrders();
+    body = '<div class="section-title">Auftrag holen</div>' +
+      (list.length ? list.map(o =>
+        '<button class="pk-order-item slide-in' + pulseCls(o) + '" onclick="takeOrder(\'' + o.id + '\')">' +
+        '<div class="oi-row"><span class="oi-id">' + o.id + '</span>' + prioBadge(o) + '</div>' +
+        '<div class="oi-sub">' + esc(o.kunde) + ' · ' + o.positionen.length + ' Positionen · ' + tourById[o.tour].name + '</div>' +
+        '<div class="oi-cut" style="color:' + (state.critical.has(o.id) ? "var(--red)" : "var(--text2)") + '">Cut-off ' +
+        fmtTime(o.cutoff) + ' · noch <span data-cutoff="' + o.cutoff.getTime() + '">' + fmtCountdown(o.cutoff - new Date()) + '</span>' +
+        (o.picker === ME ? ' · <b>dir zugewiesen</b>' : "") + '</div></button>').join("")
+      : '<div class="empty"><b>🎉</b>Keine offenen Aufträge – gut gemacht!</div>');
+  } else {
+    const o = orderById(s.orderId);
+    if (s.phase === "summary") {
+      /* ---- Zusammenfassung ---- */
+      const teil = o.positionen.filter(p => p.status === "teilpick").length;
+      const prob = o.positionen.filter(p => p.status === "problem").length;
+      const dur = Math.max(1, Math.round((Date.now() - s.startedAt) / 60000));
+      body = '<div class="summary-card slide-in"><div class="sc-ico">📦</div>' +
+        '<h2>' + o.id + ' fertig kommissioniert</h2>' +
+        '<div class="summary-grid">' +
+        '<div class="sg"><b>' + o.positionen.length + '</b><span>Positionen</span></div>' +
+        '<div class="sg"><b style="color:' + (teil+prob ? "var(--amber)" : "var(--green)") + '">' + (teil + prob) + '</b><span>Teil/Problem</span></div>' +
+        '<div class="sg"><b>' + dur + ' min</b><span>Dauer</span></div></div>' +
+        '<button class="btn-big btn-scan" onclick="handOver()">AN PACKPLATZ ÜBERGEBEN →</button></div>';
+    } else {
+      const pos = o.positionen[s.queue[0]];
+      const art = artById[pos.artikelId];
+      const revisit = pos._problemOnce ? '<div class="teil-hint">⚠ Zurückgestellte Position – erneut versuchen oder endgültig melden</div>' : "";
+      if (s.phase === "scan") {
+        /* ---- Scan-Bestätigung ---- */
+        body = revisit +
+          '<div style="text-align:center"><div class="section-title" style="margin-bottom:2px">Gehe zu Lagerplatz</div>' +
+          '<div class="loc-code">' + locCode(art.lagerplatz) + '</div>' +
+          '<div class="loc-sub"><span class="badge badge-blue mono">Gang ' + art.lagerplatz.gang +
+          '</span><span class="badge badge-blue mono">Regal ' + art.lagerplatz.regal +
+          '</span><span class="badge badge-blue mono">Boden ' + art.lagerplatz.boden + '</span></div></div>' +
+          '<div class="pk-art' + (s.flash ? " flash-green" : "") + '"><div class="art-emoji">' + katEmoji(art.kategorie) + '</div>' +
+          '<div class="art-name">' + esc(art.name) + '</div>' +
+          '<div class="art-nr">Art.-Nr. ' + art.artikelnummer + ' · ' + art.kategorie + '</div>' +
+          '<div class="pk-qty">× ' + pos.sollMenge + ' <small>Stück</small></div></div>' +
+          '<div class="scan-box"><input id="scanInput" class="mono" inputmode="numeric" placeholder="Barcode scannen…" ' +
+          'onkeydown="if(event.key===\'Enter\'){doScan(this.value);}" autocomplete="off"></div>' +
+          (config.scanSimButton ? '<button class="btn-big btn-scan" onclick="doScan(\'' + art.artikelnummer + '\')">SCAN SIMULIEREN ✓</button>' : "") +
+          '<button class="btn-big btn-problem" onclick="openProblem()">⚠ Problem melden</button>';
+      } else if (s.phase === "qty") {
+        /* ---- Menge bestätigen ---- */
+        const knapp = art.bestand < pos.sollMenge;
+        body = '<div style="text-align:center"><div class="section-title" style="margin-bottom:2px">Menge bestätigen</div>' +
+          '<div class="loc-code" style="font-size:34px">' + locCode(art.lagerplatz) + '</div></div>' +
+          '<div class="pk-art flash-green"><div class="art-emoji">' + katEmoji(art.kategorie) + '</div>' +
+          '<div class="art-name">' + esc(art.name) + '</div>' +
+          '<div class="art-nr">✓ Artikel korrekt gescannt</div></div>' +
+          (knapp ? '<div class="teil-hint">Nur noch ' + art.bestand + ' am Lagerplatz – Teilmenge möglich</div>' : "") +
+          '<div class="stepper"><button onclick="qtyStep(-1)">−</button>' +
+          '<span class="st-val">' + state.qty + '</span>' +
+          '<button onclick="qtyStep(1)">+</button></div>' +
+          '<div style="text-align:center;font-size:12.5px;color:var(--text2)">Soll: <b class="mono">' + pos.sollMenge + '</b>' +
+          (state.qty < pos.sollMenge ? ' · wird als <b style="color:var(--amber)">Teilpick</b> gebucht' : "") + '</div>' +
+          '<button class="btn-big btn-scan" onclick="confirmQty()">MENGE BESTÄTIGEN ✓</button>' +
+          '<button class="btn-big btn-problem" onclick="openProblem()">⚠ Problem melden</button>';
+      }
+      /* Fortschritt + Fehlscan-Overlay */
+      const done = doneCount(o), total = o.positionen.length;
+      footer = '<div class="pk-progress"><div style="display:flex;justify-content:space-between;margin-bottom:5px">' +
+        '<span class="mono">' + o.id + '</span><span class="mono">' + done + ' / ' + total + ' Positionen</span></div>' +
+        '<div class="progress"><i style="width:' + Math.round(done / total * 100) + '%"></i></div></div>';
+      if (s.wrongScan) {
+        overlay = '<div class="overlay-wrong"><div class="ow-ico">🔇⚠️</div><h2>STOPP – falscher Artikel!</h2>' +
+          '<div class="ow-codes">Erwartet: <b>' + art.artikelnummer + '</b><br>Gescannt: <b>' + esc(s.wrongScan) + '</b></div>' +
+          '<p style="font-size:13px;opacity:.9">Lege den Artikel zurück und greife den richtigen.</p>' +
+          '<button onclick="closeWrong()">← ZURÜCK ZUM PICK</button></div>';
+      }
+    }
+  }
+  $("#view-picker").innerHTML =
+    '<div class="device-wrap"><div class="device"><div class="device-notch"></div>' +
+    '<div class="screen">' + pkHead() + '<div class="pk-body">' + body + '</div>' + footer + overlay + '</div></div></div>';
+  const inp = $("#scanInput");
+  if (inp && !state.session?.wrongScan) inp.focus(); /* Fokus bleibt im Scan-Feld – wie am echten Scanner */
+  if (state.session) state.session.flash = false;
+}
+
+/* ---- Picker-Aktionen ---- */
+function takeOrder(orderId) {
+  const o = orderById(orderId);
+  o.picker = ME; o.status = "inKommissionierung"; o.zeiten.gestartet = new Date();
+  pulse(o);
+  const queue = routeSort(o.positionen.map((p, i) => p.status === "offen" ? i : -1).filter(i => i >= 0), o);
+  state.session = { orderId, queue, phase:"scan", startedAt: Date.now(), wrongScan:null, flash:false };
+  addLog(pickerById[ME].name + " hat " + o.id + " übernommen");
+  render();
+}
+function doScan(value) {
+  const s = state.session; if (!s || s.phase !== "scan") return;
+  const o = orderById(s.orderId);
+  const pos = o.positionen[s.queue[0]];
+  const art = artById[pos.artikelId];
+  const v = String(value).trim();
+  if (!v) return;
+  state.scansTotal++;
+  if (v === art.artikelnummer) {
+    state.scansOk++;
+    s.phase = "qty"; s.flash = true;
+    /* Vorbefüllt mit Soll-Menge, aber nie mehr als tatsächlich am Platz liegt */
+    state.qty = Math.max(0, Math.min(pos.sollMenge, art.bestand));
+  } else {
+    pickerById[ME].fehlerHeute++;
+    s.wrongScan = v;
+    addLog("❌ Fehlscan bei " + o.id + ": erwartet " + art.artikelnummer + ", gescannt " + v);
+  }
+  render();
+}
+function closeWrong() { state.session.wrongScan = null; render(); }
+function qtyStep(d) {
+  const s = state.session; const pos = orderById(s.orderId).positionen[s.queue[0]];
+  const max = config.ueberpicken ? 999 : pos.sollMenge;   // Überpicken nur wenn erlaubt
+  state.qty = Math.min(max, Math.max(0, state.qty + d));
+  render();
+}
+function confirmQty() {
+  const s = state.session; const o = orderById(s.orderId);
+  const pos = o.positionen[s.queue[0]];
+  const art = artById[pos.artikelId];
+  pos.istMenge = state.qty;
+  pos.status = state.qty < pos.sollMenge ? "teilpick" : "gepickt";
+  /* Bestand reduzieren + Mindestbestand prüfen */
+  const vorher = art.bestand;
+  art.bestand = Math.max(0, art.bestand - state.qty);
+  if (vorher >= art.mindestbestand && art.bestand < art.mindestbestand)
+    addWarning("amber","📦", art.name + " (" + art.artikelnummer + "): Bestand " + art.bestand +
+               " unter Mindestbestand " + art.mindestbestand);
+  pickerById[ME].picksHeute++;
+  if (pos.status === "teilpick")
+    addLog("Teilpick bei " + o.id + ": " + art.name + " " + state.qty + "/" + pos.sollMenge);
+  s.queue.shift();
+  s.phase = s.queue.length ? "scan" : "summary";
+  pulse(o);
+  render();
+}
+/* ---- Problem melden ---- */
+function openProblem() {
+  $("#modalRoot").innerHTML = '<div class="modal-back" onclick="if(event.target===this)closeModal()">' +
+    '<div class="modal"><h3>⚠ Problem melden</h3><p>Die Position wird übersprungen und ans Ende gestellt. Der Leitstand wird sofort informiert.</p>' +
+    ['Lagerplatz leer','Ware beschädigt','Artikel nicht auffindbar'].map(t =>
+      '<button class="prob-btn" onclick="reportProblem(\'' + t + '\')">' + t + '</button>').join("") +
+    '<button class="cancel" onclick="closeModal()">Abbrechen</button></div></div>';
+}
+function closeModal() { $("#modalRoot").innerHTML = ""; }
+function reportProblem(typ) {
+  closeModal();
+  const s = state.session; const o = orderById(s.orderId);
+  const idx = s.queue[0];
+  const pos = o.positionen[idx];
+  const art = artById[pos.artikelId];
+  addWarning("red","⚠", locCode(art.lagerplatz) + ": " + typ + " gemeldet (" + art.name + ", " + o.id + ")");
+  if (!pos._problemOnce) {
+    /* Erstes Mal: ans Ende stellen */
+    pos._problemOnce = true;
+    s.queue.shift(); s.queue.push(idx);
+  } else {
+    /* Zweites Mal: endgültig als Problem buchen */
+    pos.status = "problem"; pos.istMenge = 0;
+    s.queue.shift();
+  }
+  s.phase = s.queue.length ? "scan" : "summary";
+  pulse(o);
+  render();
+}
+function handOver() {
+  const s = state.session; const o = orderById(s.orderId);
+  o.status = "amPackplatz"; o.zeiten.fertig = new Date();
+  pulse(o);
+  addLog(o.id + " an Packplatz übergeben (" + pickerById[ME].name + ")");
+  state.session = null;
+  render();
+}
+
+/* ============================================================
+   C) PACKPLATZ / VERLADUNG
+   ============================================================ */
+
+function renderPackplatz() {
+  /* Warteschlange: vom Picker übergebene Aufträge, nach Cut-off sortiert */
+  const queue = orders.filter(o => o.status === "amPackplatz").sort((a,b) => a.cutoff - b.cutoff);
+  const packHTML = queue.length ? queue.map(o => {
+    const allChecked = !config.kontrollzaehlung || o.positionen.every(p => p.kontrolle || p.status === "problem");
+    const ready = allChecked && o.packstueck;
+    return '<div class="card pack-card slide-in' + pulseCls(o) + '" id="pack-' + o.id + '">' +
+      '<div class="pc-head"><span class="pc-id">' + o.id + '</span>' + prioBadge(o) +
+      '<span class="badge badge-blue mono">Cut-off ' + fmtTime(o.cutoff) + '</span></div>' +
+      '<div class="pc-kunde">' + esc(o.kunde) + ' · ' + tourById[o.tour].name +
+      (o.picker ? ' · gepickt von ' + esc(pickerById[o.picker].name) : "") + '</div>' +
+      o.positionen.map((p, i) => {
+        const a = artById[p.artikelId];
+        if (p.status === "problem")
+          return '<div class="check-row" style="opacity:.55"><div class="cb">–</div>' +
+            '<span class="cr-name">' + esc(a.name) + '</span><span class="badge badge-red cr-teil">Problem – fehlt</span></div>';
+        return '<div class="check-row' + (p.kontrolle ? " checked" : "") + '" onclick="togglePos(\'' + o.id + '\',' + i + ')">' +
+          '<div class="cb">' + (p.kontrolle ? "✓" : "") + '</div>' +
+          '<span class="cr-name">' + esc(a.name) + ' <span class="mono" style="font-size:11px;color:var(--text2)">' + a.artikelnummer + '</span></span>' +
+          (p.status === "teilpick" ? '<span class="badge badge-amber cr-teil">Teilpick</span>' : "") +
+          '<span class="cr-qty">× ' + p.istMenge + '</span></div>';
+      }).join("") +
+      '<div class="pack-select">' + config.packstuecke.map(ps =>
+        '<button class="' + (o.packstueck === ps ? "sel" : "") + '" onclick="setPack(\'' + o.id + '\',\'' + ps + '\')">' + ps + '</button>').join("") + '</div>' +
+      '<button class="pill pill-primary" style="width:100%;padding:13px" ' + (ready ? "" : "disabled") +
+      ' onclick="packOrder(\'' + o.id + '\')">VERPACKT ✓</button>' +
+      (!ready ? '<div style="font-size:11.5px;color:var(--text2);text-align:center;margin-top:7px">Erst alle Positionen abhaken und Packstück wählen</div>' : "") +
+      '</div>';
+  }).join("") : '<div class="empty"><b>🎉</b>Warteschlange leer – nichts zu packen!</div>';
+
+  /* Verlade-Modus: gepackte Aufträge gruppiert nach Tour */
+  const loadHTML = touren.map(t => {
+    const inTour = orders.filter(o => o.tour === t.id && (o.status === "gepackt" || o.status === "verladen"));
+    const gepackt = inTour.filter(o => o.status === "gepackt");
+    const allOfTour = orders.filter(o => o.tour === t.id);
+    const complete = allOfTour.length > 0 && allOfTour.every(o => o.status === "verladen");
+    let rows;
+    if (complete) {
+      rows = '<div class="tour-done">✓ ' + t.name + ' komplett – ' + allOfTour.length + '/' + allOfTour.length + ' Aufträge verladen</div>';
+    } else if (gepackt.length) {
+      rows = gepackt.sort((a,b) => a.cutoff - b.cutoff).map(o =>
+        '<div class="load-row slide-in' + pulseCls(o) + '" id="load-' + o.id + '">' +
+        '<div class="lr-info"><div class="lr-id">' + o.id + '</div>' +
+        '<div class="lr-sub">' + esc(o.kunde) + ' · ' + (o.packstueck || "–") + ' · Cut-off ' + fmtTime(o.cutoff) + '</div></div>' +
+        '<button class="pill pill-green" onclick="loadOrder(\'' + o.id + '\')">AUF LKW VERLADEN 🚚</button></div>').join("");
+    } else {
+      rows = '<div class="empty" style="padding:16px">Noch nichts Gepacktes für diese Tour</div>';
+    }
+    const verladen = inTour.filter(o => o.status === "verladen").length;
+    return '<div class="tour-group"><div class="tour-head"><span class="th-name">🚚 ' + t.name +
+      ' · Abfahrt ' + fmtTime(t.abfahrt) + '</span><span class="mono">noch <span data-cutoff="' +
+      t.abfahrt.getTime() + '">' + fmtCountdown(t.abfahrt - new Date()) + '</span> · ' +
+      verladen + '/' + allOfTour.length + ' verladen</span></div>' + rows + '</div>';
+  }).join("");
+
+  $("#view-packplatz").innerHTML =
+    '<div class="pack-grid">' +
+    '<div><div class="section-title">Packen – Warteschlange (' + queue.length + ')</div>' + packHTML + '</div>' +
+    '<div><div class="section-title">Verladung nach Tour</div>' + loadHTML + '</div></div>';
+}
+/* ---- Packplatz-Aktionen ---- */
+function togglePos(orderId, i) {
+  const p = orderById(orderId).positionen[i];
+  p.kontrolle = !p.kontrolle;
+  render();
+}
+function setPack(orderId, ps) { orderById(orderId).packstueck = ps; render(); }
+function packOrder(orderId) {
+  const o = orderById(orderId);
+  o.status = "gepackt"; pulse(o);
+  addLog(o.id + " verpackt (" + o.packstueck + ")");
+  render();
+}
+function loadOrder(orderId) {
+  const o = orderById(orderId);
+  const el = document.getElementById("load-" + orderId);
+  addLog(o.id + " auf LKW verladen (" + tourById[o.tour].name + ")");
+  o.status = "verladen"; pulse(o);
+  if (el) { el.classList.add("fly-out"); setTimeout(render, 480); } else render();
+}
+
+
+/* ============================================================
+   D) VERWALTUNG – der Betrieb stellt hier alles selbst ein.
+   Übersichtliche Karten-Listen, große Touch-Flächen, eigene
+   Dialoge (keine Browser-Popups – die sind in vielen Umgebungen
+   blockiert und funktionieren auf Touch-Geräten schlecht).
+   ============================================================ */
+let idSeq = 100;                 // Laufende Nummer für neue Datensätze
+let _confirmFn = null;           // Callback für den Bestätigungs-Dialog
+let _inputFn = null;             // Callback für den Eingabe-Dialog
+const ADMIN_TABS = [
+  ["artikel","📦 Artikel"], ["auftraege","📋 Aufträge"], ["personal","👥 Personal"],
+  ["touren","🚚 Touren"], ["stammdaten","🏷 Kategorien"], ["regeln","⚙️ Regeln"],
+];
+function setAdminTab(t) { state.adminTab = t; render(); }
+function artikelInVerwendung(artId) {
+  return orders.some(o => o.positionen.some(p => p.artikelId === artId));
+}
+function renderAdmin() {
+  const tab = state.adminTab || "artikel";
+  const intro = '<div class="card admin-card" style="background:linear-gradient(120deg,rgba(43,63,228,.06),rgba(124,58,237,.06));border-color:rgba(43,63,228,.2)">' +
+    '<h2 style="font-size:18px;margin-bottom:4px">Verwaltung – hier stellst du alles selbst ein</h2>' +
+    '<p style="font-size:13.5px;color:var(--text2);line-height:1.5">Wähle unten einen Bereich. Zum <b>Bearbeiten</b> tippst du auf einer Karte „✏️ Bearbeiten”. ' +
+    'Mit <b>＋</b> legst du Neues an. Jede Änderung ist sofort in Leitstand, Picker und Packplatz sichtbar.</p></div>';
+  const tabs = '<div class="admin-tabs">' + ADMIN_TABS.map(([k, l]) =>
+    '<button class="admin-tab' + (k === tab ? " active" : "") + '" onclick="setAdminTab(\'' + k + '\')">' + l + '</button>').join("") + '</div>';
+  let body = "";
+  if (tab === "artikel")    body = adminArtikel();
+  if (tab === "auftraege")  body = adminAuftraege();
+  if (tab === "personal")   body = adminPersonal();
+  if (tab === "touren")     body = adminTouren();
+  if (tab === "stammdaten") body = adminStammdaten();
+  if (tab === "regeln")     body = adminRegeln();
+  $("#view-admin").innerHTML = intro + tabs + body;
+}
+
+/* ---------- Eigene Dialoge (Ersatz für alert / confirm / prompt) ---------- */
+function showErr(msg) {
+  const e = document.getElementById("formErr");
+  if (e) { e.textContent = msg; e.style.display = "block"; }
+}
+function askConfirm(text, fn) {
+  _confirmFn = fn;
+  $("#modalRoot").innerHTML = '<div class="modal-back" onclick="if(event.target===this)closeModal()"><div class="modal">' +
+    '<h3>Bist du sicher?</h3><div class="confirm-txt">' + text + '</div>' +
+    '<button class="btn-danger-big" onclick="modalConfirmYes()">JA, LÖSCHEN</button>' +
+    '<button class="cancel" onclick="closeModal()">Abbrechen</button></div></div>';
+}
+function modalConfirmYes() { const f = _confirmFn; _confirmFn = null; closeModal(); if (f) f(); }
+function askInput(title, hint, placeholder, fn) {
+  _inputFn = fn;
+  $("#modalRoot").innerHTML = '<div class="modal-back" onclick="if(event.target===this)closeModal()"><div class="modal">' +
+    '<h3>' + title + '</h3><p>' + hint + '</p><div class="form-err" id="formErr"></div>' +
+    '<input class="inp" id="inpVal" placeholder="' + esc(placeholder) + '" style="margin-bottom:12px"' +
+    ' onkeydown="if(event.key===\'Enter\')modalInputSave()">' +
+    '<button class="btn-big btn-scan" onclick="modalInputSave()">SPEICHERN ✓</button>' +
+    '<button class="cancel" onclick="closeModal()">Abbrechen</button></div></div>';
+  const i = document.getElementById("inpVal"); if (i) i.focus();
+}
+function modalInputSave() {
+  const v = document.getElementById("inpVal").value.trim();
+  if (!v) { showErr("Bitte etwas eingeben."); return; }
+  const f = _inputFn; _inputFn = null; closeModal(); if (f) f(v);
+}
+
+/* ---------- Artikel ---------- */
+function adminArtikel() {
+  const list = artikel.slice().sort((a,b) => a.name.localeCompare(b.name)).map(a => {
+    const low = a.bestand < a.mindestbestand;
+    const used = artikelInVerwendung(a.id);
+    return '<div class="item-card art-item" data-search="' + esc((a.name + " " + a.artikelnummer + " " + a.kategorie).toLowerCase()) + '">' +
+      '<div class="ic-head"><div class="ic-emoji">' + katEmoji(a.kategorie) + '</div>' +
+      '<div class="ic-title">' + esc(a.name) +
+      '<div class="ic-sub">Art.-Nr. <span class="mono">' + a.artikelnummer + '</span> · ' + esc(a.kategorie) + '</div></div>' +
+      (low ? '<span class="badge badge-amber">Bestand niedrig</span>' : "") + '</div>' +
+      '<div class="ic-chips"><span class="badge badge-blue mono">📍 ' + locCode(a.lagerplatz) + '</span>' +
+      '<span class="badge badge-blue mono">min. ' + a.mindestbestand + '</span>' +
+      '<span class="badge badge-blue mono">' + a.gewicht + ' kg</span></div>' +
+      '<div class="ic-actions"><span class="stock-big"><button onclick="stockAdj(\'' + a.id + '\',-1)">−</button>' +
+      '<b class="' + (low ? "low" : "") + '">' + a.bestand + '</b>' +
+      '<button onclick="stockAdj(\'' + a.id + '\',1)">+</button><span class="sb-label">Bestand</span></span>' +
+      '<button class="btn-sm btn-edit" onclick="openArtikelForm(\'' + a.id + '\')">✏️ Bearbeiten</button>' +
+      '<button class="btn-sm btn-del" ' + (used ? 'disabled title="In Aufträgen enthalten"' : "") +
+      ' onclick="deleteArtikel(\'' + a.id + '\')">Löschen</button></div></div>';
+  }).join("");
+  return '<div class="help-note">💡 <b>Artikel-Stammdaten.</b> Bestand direkt mit − / + korrigieren. ' +
+    '„Bearbeiten” öffnet alle Felder (Name, Nummer, Lagerplatz, Mindestbestand …). ' +
+    'Artikel, die in Aufträgen stecken, können nicht gelöscht werden.</div>' +
+    '<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center">' +
+    '<button class="pill pill-primary" onclick="openArtikelForm(null)" style="padding:12px 22px">＋ Neuer Artikel</button>' +
+    '<span style="font-size:12.5px;color:var(--text2)">' + artikel.length + ' Artikel</span></div>' +
+    '<div class="search-wrap"><input class="inp" placeholder="🔍 Artikel suchen (Name, Nummer, Kategorie) …" oninput="filterArt(this.value)"></div>' +
+    '<div id="artList">' + list + '</div>';
+}
+function filterArt(q) { /* Filtert ohne Neu-Rendern – so bleibt der Fokus im Suchfeld */
+  q = q.trim().toLowerCase();
+  document.querySelectorAll(".art-item").forEach(el => {
+    el.style.display = !q || el.dataset.search.includes(q) ? "" : "none";
+  });
+}
+function stockAdj(id, d) {
+  const a = artById[id];
+  const vorher = a.bestand;
+  a.bestand = Math.max(0, a.bestand + d);
+  if (vorher >= a.mindestbestand && a.bestand < a.mindestbestand)
+    addWarning("amber","📦", a.name + " (" + a.artikelnummer + "): Bestand " + a.bestand + " unter Mindestbestand " + a.mindestbestand);
+  addLog("Bestandskorrektur " + a.name + ": " + vorher + " → " + a.bestand);
+  render();
+}
+function openArtikelForm(id) {
+  const a = id ? artById[id] : null;
+  const kats = config.kategorien.map(k =>
+    '<option' + (a && a.kategorie === k.name ? " selected" : "") + '>' + esc(k.name) + '</option>').join("");
+  $("#modalRoot").innerHTML = '<div class="modal-back" onclick="if(event.target===this)closeModal()"><div class="modal" style="max-width:460px">' +
+    '<h3>' + (a ? "Artikel bearbeiten" : "Neuer Artikel") + '</h3><p>Änderungen wirken sofort in allen Ansichten.</p>' +
+    '<div class="form-err" id="formErr"></div><div class="form-grid">' +
+    fld("Artikelname","f_name","text", a ? a.name : "", "full") +
+    fld("Artikelnummer (4-stellig)","f_nr","text", a ? a.artikelnummer : "") +
+    '<div class="field"><label>Kategorie</label><select id="f_kat">' + kats + '</select></div>' +
+    fld("Gang","f_gang","number", a ? a.lagerplatz.gang : 1) +
+    fld("Regal","f_regal","number", a ? a.lagerplatz.regal : 1) +
+    fld("Boden","f_boden","number", a ? a.lagerplatz.boden : 1) +
+    fld("Gewicht (kg)","f_gew","number", a ? a.gewicht : 1) +
+    fld("Bestand","f_best","number", a ? a.bestand : 0) +
+    fld("Mindestbestand","f_mind","number", a ? a.mindestbestand : 5) +
+    '</div><button class="btn-big btn-scan" onclick="saveArtikel(' + (id ? "'" + id + "'" : "null") + ')">SPEICHERN ✓</button>' +
+    '<button class="cancel" onclick="closeModal()">Abbrechen</button></div></div>';
+}
+function fld(label, id, type, val, cls) {
+  return '<div class="field ' + (cls || "") + '"><label>' + label + '</label><input id="' + id +
+    '" type="' + type + '" value="' + esc(val) + '"' + (type === "number" ? ' min="0"' : "") + '></div>';
+}
+function V(id) { return document.getElementById(id).value.trim(); }
+function saveArtikel(id) {
+  const nr = V("f_nr");
+  if (!/^\d{4}$/.test(nr)) { showErr("Die Artikelnummer muss genau 4 Ziffern haben (z. B. 4711)."); return; }
+  const dupe = artikel.find(a => a.artikelnummer === nr && a.id !== id);
+  if (dupe) { showErr("Artikelnummer " + nr + " ist bereits vergeben („" + dupe.name + "”)."); return; }
+  if (!V("f_name")) { showErr("Bitte einen Artikelnamen eingeben."); return; }
+  const a = id ? artById[id] : A("a" + (++idSeq), nr, "", "", 1,1,1, 0,0,0);
+  if (!id) artikel.push(a);
+  a.artikelnummer = nr; a.name = V("f_name");
+  a.kategorie = document.getElementById("f_kat").value;
+  a.lagerplatz = { gang:+V("f_gang")||1, regal:+V("f_regal")||1, boden:+V("f_boden")||1 };
+  a.gewicht = +V("f_gew")||0; a.mindestbestand = +V("f_mind")||0;
+  const vorher = a.bestand; a.bestand = +V("f_best")||0;
+  if (a.bestand < a.mindestbestand && (id ? vorher >= a.mindestbestand : true))
+    addWarning("amber","📦", a.name + " (" + a.artikelnummer + "): Bestand " + a.bestand + " unter Mindestbestand " + a.mindestbestand);
+  addLog((id ? "Artikel geändert: " : "Neuer Artikel angelegt: ") + a.name + " (" + a.artikelnummer + ")");
+  closeModal(); render();
+}
+function deleteArtikel(id) {
+  const a = artById[id];
+  if (artikelInVerwendung(id)) return;
+  askConfirm('Artikel <b>„' + esc(a.name) + '”</b> (' + a.artikelnummer + ') endgültig löschen?', () => {
+    artikel.splice(artikel.indexOf(a), 1);
+    addLog("Artikel gelöscht: " + a.name + " (" + a.artikelnummer + ")");
+    render();
+  });
+}
+
+/* ---------- Aufträge ---------- */
+const STATUS_LABEL = { offen:"Offen", inKommissionierung:"In Kommissionierung",
+  amPackplatz:"Am Packplatz", gepackt:"Gepackt", verladen:"Verladen" };
+const STATUS_BADGE = { offen:"badge-blue", inKommissionierung:"badge-amber",
+  amPackplatz:"badge-amber", gepackt:"badge-green", verladen:"badge-green" };
+function adminAuftraege() {
+  const list = orders.slice().sort((a,b) => a.cutoff - b.cutoff).map(o => {
+    const editable = o.status === "offen";
+    return '<div class="item-card">' +
+      '<div class="ic-head"><div class="ic-title"><span class="mono">' + o.id + '</span> · ' + esc(o.kunde) +
+      '<div class="ic-sub">' + o.positionen.length + ' Positionen · ' + PRIO_LABEL[o.prioritaet] + '</div></div>' +
+      '<span class="badge ' + STATUS_BADGE[o.status] + '">' + STATUS_LABEL[o.status] + '</span></div>' +
+      '<div class="ic-chips"><span class="badge badge-' + (state.critical.has(o.id) ? "red" : "blue") + ' mono">⏱ Cut-off ' + fmtTime(o.cutoff) + '</span>' +
+      '<span class="badge badge-blue">🚚 ' + esc(tourById[o.tour].name) + '</span>' +
+      (o.picker ? '<span class="badge badge-green">👤 ' + esc(pickerById[o.picker].name) + '</span>' : "") + '</div>' +
+      '<div class="ic-actions">' +
+      '<button class="btn-sm btn-edit" ' + (editable ? "" : 'disabled') + ' onclick="openOrderForm(\'' + o.id + '\')">✏️ Bearbeiten</button>' +
+      '<button class="btn-sm btn-del" ' + (editable ? "" : 'disabled') + ' onclick="stornoOrder(\'' + o.id + '\')">Stornieren</button>' +
+      (!editable ? '<span style="font-size:11.5px;color:var(--text2)">nur im Status „Offen” änderbar</span>' : "") +
+      '</div></div>';
+  }).join("");
+  return '<div class="help-note">💡 <b>Aufträge.</b> Hier legst du neue Kundenaufträge an – sie erscheinen sofort ' +
+    'beim Picker und im Leitstand. Bearbeiten und Stornieren geht nur, solange ein Auftrag <b>offen</b> ist ' +
+    '(laufende Kommissionierung darf nicht verändert werden).</div>' +
+    '<div style="margin-bottom:12px"><button class="pill pill-primary" onclick="openOrderForm(null)" style="padding:12px 22px">＋ Neuer Auftrag</button></div>' + list;
+}
+function openOrderForm(id) {
+  const o = id ? orderById(id) : null;
+  state.tmpPos = o ? o.positionen.map(p => ({ artikelId: p.artikelId, sollMenge: p.sollMenge })) : [];
+  const tours = touren.map(t => '<option value="' + t.id + '"' + (o && o.tour === t.id ? " selected" : "") + '>' + esc(t.name) + '</option>').join("");
+  const prios = ["normal","eilig","express"].map(v => '<option value="' + v + '"' + (o && o.prioritaet === v ? " selected" : "") + '>' + PRIO_LABEL[v].replace("⚡ ","") + '</option>').join("");
+  $("#modalRoot").innerHTML = '<div class="modal-back" onclick="if(event.target===this)closeModal()"><div class="modal" style="max-width:480px;max-height:88vh;overflow-y:auto">' +
+    '<h3>' + (o ? o.id + " bearbeiten" : "Neuer Auftrag") + '</h3><p>Cut-off = Uhrzeit (heute), zu der der Auftrag auf dem LKW sein muss.</p>' +
+    '<div class="form-err" id="formErr"></div><div class="form-grid">' +
+    fld("Kunde","f_kunde","text", o ? o.kunde : "", "full") +
+    '<div class="field"><label>Priorität</label><select id="f_prio">' + prios + '</select></div>' +
+    '<div class="field"><label>Cut-off (heute)</label><input id="f_cut" type="time" value="' + fmtTime(o ? o.cutoff : inMin(90)) + '"></div>' +
+    '<div class="field full"><label>Tour</label><select id="f_tour">' + tours + '</select></div>' +
+    '</div><div class="pos-builder"><div class="section-title" style="margin-bottom:6px">Positionen</div>' +
+    '<div id="posList"></div><div class="add-inline"><select id="f_art">' +
+    artikel.slice().sort((a,b) => a.name.localeCompare(b.name)).map(a =>
+      '<option value="' + a.id + '">' + esc(a.name) + ' (' + a.artikelnummer + ')</option>').join("") +
+    '</select><input id="f_menge" type="number" min="1" value="1"><button class="pill pill-ghost" onclick="tmpPosAdd()">＋</button></div></div>' +
+    '<button class="btn-big btn-scan" onclick="saveOrder(' + (id ? "'" + id + "'" : "null") + ')">SPEICHERN ✓</button>' +
+    '<button class="cancel" onclick="closeModal()">Abbrechen</button></div></div>';
+  renderTmpPos();
+}
+function renderTmpPos() {
+  const el = document.getElementById("posList"); if (!el) return;
+  el.innerHTML = state.tmpPos.length ? state.tmpPos.map((p, i) => {
+    const a = artById[p.artikelId];
+    return '<div class="pos-line"><span>' + katEmoji(a.kategorie) + ' ' + esc(a.name) +
+      ' <span class="mono" style="font-size:11px;color:var(--text2)">' + locCode(a.lagerplatz) + '</span></span>' +
+      '<span style="display:flex;align-items:center;gap:8px"><b class="mono">× ' + p.sollMenge + '</b>' +
+      '<button class="icon-btn danger" onclick="tmpPosDel(' + i + ')">✕</button></span></div>';
+  }).join("") : '<div style="font-size:12px;color:var(--text2);padding:4px">Noch keine Positionen – unten Artikel und Menge wählen, dann ＋ tippen.</div>';
+}
+function tmpPosAdd() {
+  const artId = document.getElementById("f_art").value;
+  const menge = Math.max(1, +document.getElementById("f_menge").value || 1);
+  const ex = state.tmpPos.find(p => p.artikelId === artId);
+  if (ex) ex.sollMenge += menge; else state.tmpPos.push({ artikelId: artId, sollMenge: menge });
+  renderTmpPos();
+}
+function tmpPosDel(i) { state.tmpPos.splice(i, 1); renderTmpPos(); }
+function timeToday(hhmm) {
+  const [h, m] = hhmm.split(":").map(Number);
+  const d = new Date(); d.setHours(h, m, 0, 0); return d;
+}
+function saveOrder(id) {
+  if (!V("f_kunde")) { showErr("Bitte einen Kunden eingeben."); return; }
+  if (!state.tmpPos.length) { showErr("Bitte mindestens eine Position hinzufügen (Artikel wählen, Menge, dann ＋)."); return; }
+  let o = id ? orderById(id) : null;
+  if (!o) {
+    const maxNr = Math.max(...orders.map(x => +x.id.slice(2)), 2299);
+    o = O("A-" + (maxNr + 1), "", "normal", 60, touren[0].id, [], "offen", null);
+    orders.push(o);
+  }
+  o.kunde = V("f_kunde");
+  o.prioritaet = document.getElementById("f_prio").value;
+  o.cutoff = timeToday(document.getElementById("f_cut").value || fmtTime(inMin(60)));
+  o.tour = document.getElementById("f_tour").value;
+  o.positionen = state.tmpPos.map(p => P(p.artikelId, p.sollMenge));
+  pulse(o);
+  addLog((id ? "Auftrag geändert: " : "Neuer Auftrag angelegt: ") + o.id + " (" + o.kunde + ", " + o.positionen.length + " Positionen)");
+  closeModal(); render();
+}
+function stornoOrder(id) {
+  const o = orderById(id);
+  if (o.status !== "offen") return;
+  askConfirm('Auftrag <b>' + o.id + '</b> (' + esc(o.kunde) + ') wirklich stornieren?', () => {
+    orders.splice(orders.indexOf(o), 1);
+    state.critical.delete(o.id);
+    addLog("Auftrag storniert: " + o.id + " (" + o.kunde + ")");
+    render();
+  });
+}
+
+/* ---------- Personal ---------- */
+function adminPersonal() {
+  const list = pickers.map(p => {
+    const busy = orders.some(o => o.picker === p.id && (o.status === "offen" || o.status === "inKommissionierung"));
+    return '<div class="item-card"><div class="ic-head"><div class="avatar">' + p.kuerzel + '</div>' +
+      '<div class="ic-title" style="display:flex;flex-direction:column;gap:4px">' +
+      '<input class="inp" type="text" value="' + esc(p.name) + '" onchange="renamePicker(\'' + p.id + '\', this.value)">' +
+      (p.id === ME ? '<span class="badge badge-blue" style="align-self:flex-start">Demo-Account – das bist du in der Picker-Ansicht</span>' : "") +
+      '</div></div>' +
+      '<div class="ic-chips"><span class="badge badge-blue mono">' + p.picksHeute + ' Picks heute</span>' +
+      '<span class="badge badge-blue mono">' + pickerAcc(p) + ' % genau</span>' +
+      (busy ? '<span class="badge badge-amber">hat aktiven Auftrag</span>' : "") + '</div>' +
+      '<div class="ic-actions"><select class="inp" style="width:auto" onchange="setPickerStatus(\'' + p.id + '\', this.value)">' +
+      [["aktiv","🟢 aktiv"],["pause","🟡 Pause"],["problem","🔴 Problem"]].map(([v,l]) =>
+        '<option value="' + v + '"' + (p.status === v ? " selected" : "") + '>' + l + '</option>').join("") + '</select>' +
+      '<button class="btn-sm btn-del" ' + (p.id === ME || busy ? "disabled" : "") +
+      ' onclick="deletePicker(\'' + p.id + '\')">Entfernen</button></div></div>';
+  }).join("");
+  return '<div class="help-note">💡 <b>Personal.</b> Namen direkt im Feld ändern (Kürzel passt sich automatisch an). ' +
+    'Mitarbeiter mit aktivem Auftrag und der Demo-Account lassen sich nicht entfernen.</div>' +
+    '<div style="margin-bottom:12px"><button class="pill pill-primary" onclick="addPicker()" style="padding:12px 22px">＋ Neuer Mitarbeiter</button></div>' + list;
+}
+function renamePicker(id, name) {
+  const p = pickerById[id]; if (!name.trim()) return render();
+  addLog("Mitarbeiter umbenannt: " + p.name + " → " + name.trim());
+  p.name = name.trim();
+  p.kuerzel = p.name.split(/\s+/).map(w => w[0]).join("").slice(0,2).toUpperCase();
+  render();
+}
+function setPickerStatus(id, s) {
+  const p = pickerById[id]; p.status = s;
+  addLog("Status von " + p.name + ": " + s);
+  if (s === "problem") addWarning("red","👤", p.name + " hat ein Problem gemeldet (Status manuell gesetzt)");
+  render();
+}
+function addPicker() {
+  askInput("Neuer Mitarbeiter", "Der neue Mitarbeiter erscheint sofort in der Picker-Übersicht und kann Aufträge zugewiesen bekommen.", "Vor- und Nachname, z. B. Maria S.", name => {
+    const p = { id:"p" + (++idSeq), name,
+      kuerzel: name.split(/\s+/).map(w => w[0]).join("").slice(0,2).toUpperCase(),
+      picksHeute:0, fehlerHeute:0, status:"aktiv" };
+    pickers.push(p);
+    addLog("Mitarbeiter angelegt: " + p.name);
+    render();
+  });
+}
+function deletePicker(id) {
+  const p = pickerById[id];
+  askConfirm('Mitarbeiter <b>„' + esc(p.name) + '”</b> wirklich entfernen?', () => {
+    orders.forEach(o => { if (o.picker === id && o.status === "offen") o.picker = null; });
+    pickers.splice(pickers.indexOf(p), 1);
+    addLog("Mitarbeiter entfernt: " + p.name);
+    render();
+  });
+}
+
+/* ---------- Touren ---------- */
+function adminTouren() {
+  const list = touren.map(t => {
+    const used = orders.filter(o => o.tour === t.id).length;
+    return '<div class="item-card"><div class="ic-head"><div class="ic-emoji">🚚</div>' +
+      '<div class="ic-title"><input class="inp" type="text" value="' + esc(t.name) + '" onchange="renameTour(\'' + t.id + '\', this.value)"></div></div>' +
+      '<div class="ic-actions" style="margin-top:12px">' +
+      '<label style="font-size:12px;color:var(--text2);font-weight:700">Abfahrt heute:</label>' +
+      '<input class="inp inp-time" type="time" value="' + fmtTime(t.abfahrt) + '" onchange="setTourAbfahrt(\'' + t.id + '\', this.value)">' +
+      '<span class="badge badge-blue mono">' + used + ' Aufträge</span>' +
+      '<button class="btn-sm btn-del" ' + (used ? 'disabled title="Tour hat Aufträge"' : "") +
+      ' onclick="deleteTour(\'' + t.id + '\')">Löschen</button></div></div>';
+  }).join("");
+  return '<div class="help-note">💡 <b>Touren / LKW-Abfahrten.</b> Die Abfahrtszeit ändern wirkt sofort auf den ' +
+    'Countdown im Leitstand und die Verladung. Touren mit Aufträgen können nicht gelöscht werden.</div>' +
+    '<div style="margin-bottom:12px"><button class="pill pill-primary" onclick="addTour()" style="padding:12px 22px">＋ Neue Tour</button></div>' + list;
+}
+function renameTour(id, name) { const t = tourById[id]; if (name.trim()) { addLog("Tour umbenannt: " + t.name + " → " + name.trim()); t.name = name.trim(); } render(); }
+function setTourAbfahrt(id, hhmm) {
+  const t = tourById[id]; t.abfahrt = timeToday(hhmm);
+  addLog("Abfahrt " + t.name + " geändert auf " + hhmm + " Uhr");
+  render();
+}
+function addTour() {
+  askInput("Neue Tour", "Die Tour startet mit Abfahrt in 3 Stunden – die Zeit kannst du danach direkt in der Karte ändern.", "Name, z. B. Tour West", name => {
+    touren.push({ id:"t" + (++idSeq), name, abfahrt: inMin(180) });
+    addLog("Neue Tour angelegt: " + name);
+    render();
+  });
+}
+function deleteTour(id) {
+  const t = tourById[id];
+  if (orders.some(o => o.tour === id)) return;
+  askConfirm('Tour <b>„' + esc(t.name) + '”</b> löschen?', () => {
+    touren.splice(touren.indexOf(t), 1);
+    addLog("Tour gelöscht: " + t.name);
+    render();
+  });
+}
+
+/* ---------- Kategorien & Packstücke ---------- */
+function adminStammdaten() {
+  const kats = config.kategorien.map((k, i) => {
+    const used = artikel.some(a => a.kategorie === k.name);
+    return '<div class="item-card"><div class="ic-head">' +
+      '<input class="inp" type="text" value="' + esc(k.emoji) + '" maxlength="4" style="width:56px;text-align:center;font-size:20px;flex-shrink:0"' +
+      ' onchange="setKat(' + i + ',\'emoji\',this.value)" title="Symbol">' +
+      '<div class="ic-title"><input class="inp" type="text" value="' + esc(k.name) + '" onchange="setKat(' + i + ',\'name\',this.value)"></div>' +
+      '<button class="btn-sm btn-del" ' + (used ? 'disabled title="Wird von Artikeln verwendet"' : "") +
+      ' onclick="delKat(' + i + ')">Löschen</button></div></div>';
+  }).join("");
+  const ps = config.packstuecke.map((p, i) =>
+    '<div class="item-card"><div class="ic-head"><div class="ic-emoji">📦</div>' +
+    '<div class="ic-title"><input class="inp" type="text" value="' + esc(p) + '" onchange="setPackstueck(' + i + ',this.value)"></div>' +
+    '<button class="btn-sm btn-del" ' + (config.packstuecke.length <= 1 ? "disabled" : "") +
+    ' onclick="delPackstueck(' + i + ')">Löschen</button></div></div>').join("");
+  return '<div class="help-note">💡 <b>Kategorien</b> bestimmen das Symbol, das der Picker als Produktbild-Platzhalter sieht. ' +
+    'Umbenennen zieht automatisch alle Artikel der Kategorie mit. <b>Packstücke</b> sind die Auswahl am Packplatz (z. B. „Gitterbox” ergänzen).</div>' +
+    '<div class="section-title">Artikel-Kategorien</div>' +
+    '<div style="margin-bottom:12px"><button class="pill pill-primary" onclick="addKat()">＋ Neue Kategorie</button></div>' + kats +
+    '<div class="section-title" style="margin-top:22px">Packstücke (Packplatz)</div>' +
+    '<div style="margin-bottom:12px"><button class="pill pill-primary" onclick="addPackstueck()">＋ Neues Packstück</button></div>' + ps;
+}
+function setKat(i, key, val) {
+  val = val.trim(); if (!val) return render();
+  if (key === "name") {
+    const alt = config.kategorien[i].name;
+    artikel.forEach(a => { if (a.kategorie === alt) a.kategorie = val; });
+    addLog("Kategorie umbenannt: " + alt + " → " + val);
+  }
+  config.kategorien[i][key] = val; render();
+}
+function addKat() {
+  askInput("Neue Kategorie", "Das Symbol (Emoji) kannst du danach direkt in der Karte ändern.", "Name, z. B. Gartengeräte", name => {
+    config.kategorien.push({ name, emoji:"📦" });
+    addLog("Kategorie angelegt: " + name); render();
+  });
+}
+function delKat(i) {
+  askConfirm('Kategorie <b>„' + esc(config.kategorien[i].name) + '”</b> löschen?', () => {
+    addLog("Kategorie gelöscht: " + config.kategorien[i].name);
+    config.kategorien.splice(i,1); render();
+  });
+}
+function setPackstueck(i, val) { if (val.trim()) config.packstuecke[i] = val.trim(); render(); }
+function addPackstueck() {
+  askInput("Neues Packstück", "Erscheint sofort in der Auswahl am Packplatz.", "z. B. Gitterbox", name => {
+    config.packstuecke.push(name); addLog("Packstück angelegt: " + name); render();
+  });
+}
+function delPackstueck(i) { config.packstuecke.splice(i,1); render(); }
+
+/* ---------- Regeln & Parameter ---------- */
+function adminRegeln() {
+  const num = (name, desc, key, unit, min, max, step) =>
+    '<div class="setting-row"><div class="sr-info"><div class="sr-name">' + name + '</div><div class="sr-desc">' + desc + '</div></div>' +
+    '<input type="number" min="' + min + '" max="' + max + '" step="' + (step||1) + '" value="' + config[key] + '"' +
+    ' onchange="setConfig(\'' + key + '\', +this.value)"><span style="font-size:12px;color:var(--text2);width:38px">' + unit + '</span></div>';
+  const tgl = (name, desc, key) =>
+    '<div class="setting-row"><div class="sr-info"><div class="sr-name">' + name + '</div><div class="sr-desc">' + desc + '</div></div>' +
+    '<label class="switch"><input type="checkbox"' + (config[key] ? " checked" : "") +
+    ' onchange="setConfig(\'' + key + '\', this.checked)"><i></i></label></div>';
+  return '<div class="help-note">💡 <b>Regeln & Parameter.</b> Jede Änderung wirkt sofort – ohne Neuladen – auf alle Ansichten, Formeln und Warnungen.</div>' +
+    '<div class="card admin-card"><div class="section-title">Betrieb</div>' +
+    '<div class="setting-row"><div class="sr-info"><div class="sr-name">Firmenname</div><div class="sr-desc">Wird in der App-Leiste angezeigt.</div></div>' +
+    '<input type="text" value="' + esc(config.firma) + '" onchange="setConfig(\'firma\', this.value.trim() || \'PICKFLOW\')"></div>' +
+    '<div class="setting-row"><div class="sr-info"><div class="sr-name">Routen-Modus</div><div class="sr-desc">Schlange: ungerade Gänge aufwärts, gerade abwärts – kürzeste Laufwege. Linear: immer aufsteigend.</div></div>' +
+    '<select onchange="setConfig(\'routeMode\', this.value)"><option value="schlange"' + (config.routeMode==="schlange"?" selected":"") + '>Schlange (empfohlen)</option>' +
+    '<option value="linear"' + (config.routeMode==="linear"?" selected":"") + '>Linear</option></select></div></div>' +
+    '<div class="card admin-card"><div class="section-title">Zeiten &amp; Warnungen</div>' +
+    num("Ø-Zeit pro Pick","Basis der Cut-off-Risikoformel: Rest-Positionen × diese Zeit + Versand-Puffer.","avgPickSec","Sek.",10,600,5) +
+    num("Versand-Puffer","Zeit für Kontrollzählung, Packen und Verladen nach dem letzten Pick.","versandPufferMin","Min.",0,120,1) +
+    num("Abfahrts-Vorwarnung","Ab dieser Restzeit färbt sich die Kennzahl „Nächste Abfahrt” rot.","abfahrtWarnMin","Min.",1,120,1) +
+    num("Ziel-Genauigkeit","Ab diesem Wert ist die Pick-Genauigkeit grün, 2 Punkte darunter rot.","zielGenauigkeit","%",90,100,0.1) +
+    '</div><div class="card admin-card"><div class="section-title">Prozess-Regeln</div>' +
+    tgl("Kontrollzählung am Packplatz","Positionen müssen vor „VERPACKT” einzeln abgehakt werden.","kontrollzaehlung") +
+    tgl("Überpicken erlauben","Picker dürfen mehr als die Soll-Menge bestätigen (z. B. bei Mindestabnahmen).","ueberpicken") +
+    tgl("„Scan simulieren”-Button","Demo-Button in der Picker-Ansicht. Am echten Gerät genügt Scanner + Enter.","scanSimButton") +
+    '</div>';
+}
+function setConfig(key, val) {
+  config[key] = val;
+  addLog("Einstellung geändert: " + key + " = " + val);
+  render();
+}
+
+/* ============================================================
+   UHR & LIVE-COUNTDOWNS (jede Sekunde, ohne Voll-Rerender –
+   so behält das Scan-Feld den Fokus)
+   ============================================================ */
+function tick() {
+  const now = new Date();
+  $("#clockTime").textContent = fmtTimeS(now);
+  document.querySelectorAll("[data-cutoff]").forEach(el => {
+    el.textContent = fmtCountdown(Number(el.dataset.cutoff) - now.getTime());
+  });
+  /* Cut-off-Risiken neu bewerten – bei Änderung Warnung + Rerender */
+  if (checkCriticals()) render();
+}
+setInterval(tick, 1000);
+
+/* ---- Start ---- */
+checkCriticals();  /* der Express-Auftrag löst hier direkt die Cut-off-Warnung aus */
+render();
+tick();
+</script>
+
+<!-- ============================================================
+GETROFFENE ANNAHMEN
+============================================================
+1. "Erledigt" in der KPI-Zeile = Aufträge mit Status GEPACKT oder
+   VERLADEN (kommissioniert allein zählt noch nicht als erledigt).
+2. Ø-Zeit pro Pick für die Cut-off-Risikoformel ist als Konstante
+   mit 50 s angesetzt (realistisch für Mittelstand mit geführter
+   Route); Picks/Stunde werden dagegen live aus den Tageszahlen
+   aller Picker seit Schichtbeginn (vor 4 h) berechnet. In die
+   Risikoformel fließt zusätzlich ein Versand-Puffer von 16 min
+   ein (Kontrollzählung + Packen + Verladen), da der Cut-off den
+   Zeitpunkt "auf dem LKW" meint – so löst der Express-Auftrag
+   mit ~20 min Restzeit ab Start korrekt die Warnung aus.
+3. Aufträge mit Status AM PACKPLATZ erscheinen im Auftrags-Board
+   in der Spalte IN KOMMISSIONIERUNG mit Badge "Am Packplatz",
+   da das Board laut Vorgabe nur vier Spalten hat.
+4. Problem-Positionen: Beim ersten Melden wird die Position ans
+   Ende der Route gestellt; wird sie beim zweiten Anlauf erneut
+   gemeldet, gilt sie endgültig als "Problem" (Menge 0) und der
+   Auftrag kann trotzdem abgeschlossen werden (gelb markiert).
+5. Die Mengen-Eingabe ist auf die Soll-Menge nach oben begrenzt
+   (kein Überpicken) und wird mit min(Soll, Bestand) vorbefüllt.
+6. Der Express-Auftrag A-2295 gehört zur Tour Nord; eine eigene
+   "Express-Tour" existiert in den Demo-Daten nicht, das Feld
+   "tour" unterstützt sie aber.
+7. Andere Picker (Lena, Ahmed) simulieren keinen automatischen
+   Fortschritt – der Live-Charakter entsteht durch die eigenen
+   Aktionen, die sofort in allen Ansichten sichtbar sind.
+8. Pick-Genauigkeit startet mit einer plausiblen Tageshistorie
+   (605/610 Scans), damit die Kennzahl ab Start realistisch ist
+   und jeder Fehlscan sie sichtbar senkt.
+9. VERWALTUNG: Aufträge sind nur im Status OFFEN editier-/stornier-
+   bar (laufende Kommissionierung darf nicht "unter der Hand"
+   verändert werden). Artikel/Kategorien/Touren sind nur löschbar,
+   wenn sie nirgends referenziert werden – klassische referenzielle
+   Integrität wie in einer echten Warenwirtschaft.
+10. Alle Parameter (Ø-Pick-Zeit, Versand-Puffer, Warnschwellen,
+   Routen-Modus, Überpicken, Kontrollzählung, Firmenname, Packstücke,
+   Kategorien inkl. Symbol) wirken sofort und ohne Neuladen auf alle
+   Ansichten, Formeln und Warnungen – gemeinsamer In-Memory-State.
+11. Cut-off- und Abfahrtszeiten beziehen sich immer auf "heute";
+   eine bereits verstrichene Uhrzeit gilt als überfällig (Warnung).
+
+AUSBAU-IDEEN FÜR VERSION 2
+1. Wareneingang mit Einlager-Vorschlägen (chaotische Lagerhaltung)
+   und automatischer Bestandsbuchung per Lieferschein-Scan.
+2. Inventur-Modus: permanente Inventur je Gang mit Zähl-Aufträgen,
+   Differenz-Protokoll und Freigabe-Workflow.
+3. Retouren-Abwicklung: Rückläufer scannen, Zustand erfassen,
+   Wiedereinlagerung oder Sperrbestand.
+4. Mehrauftrags-Picking (Batch/Multi-Order) mit Wagen-Fächern und
+   automatischer Zusammenfassung überschneidender Lagerplätze.
+5. Anbindung an die Warenwirtschaft (REST/EDI): Auftragsimport,
+   Bestandsabgleich in Echtzeit, Versandlabel-Druck und
+   Sendungsverfolgung; dazu WebSocket-Sync statt In-Memory-State.
+============================================================ -->
+</body>
+</html>
