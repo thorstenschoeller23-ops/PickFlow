@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PickFlow - DEMO-VERSION</title>
+<meta name="description" content="PickFlow - Demo-Version einer APPWERK Mini-App. Beispieldaten, keine Anmeldung, keine Speicherung.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   APPWERK · GEMEINSAMES DESIGN-SYSTEM  v2.0  "BELEG"
+   Zeichengleich in ALLEN Demo-Apps.
+
+   Grundgedanke: Jede dieser Mini-Apps ersetzt einen Zettel -
+   Bon, Laufzettel, Auftragszettel, Kommissionierschein.
+   Deshalb: dunkler Flaschengruen-Grund, darauf Creme-Belege
+   mit Perforationskante, gestrichelte Trennlinien, Messing als
+   einziger Marken-Akzent. Keine Verlaeufe, keine bunten
+   Flaechen, Farbe nur dort wo sie etwas bedeutet.
+
+   Schrift: Fraunces (Serife, Ueberschriften) · Instrument Sans
+   (Fliesstext) · IBM Plex Mono (Zahlen, Zeiten, Belegkoepfe).
+   ============================================================ */
+:root{
+  /* Grund (dunkles Flaschengruen) */
+  --canvas:#0F2A23; --canvas2:#17362C; --canvas3:#0A1F1A;
+  /* Papier */
+  --paper:#FBF7EC; --steel:#F1ECDD;
+  /* Tinte */
+  --ink:#202B25; --mut:#6C7268;
+  /* Akzente – gedeckt, sparsam */
+  --brass:#C29B4B; --paprika:#C6472A; --herb:#2E7A55; --amber:#A97C15; --blue:#2F608C;
+  --cream:#F6F1E3; --creammut:#9FB4A8;
+
+  /* Bezeichner der Bausteine (von allen Apps benutzt) */
+  --grund:#F4EFE1; --flaeche:var(--paper); --getoent:var(--steel);
+  --linie:#DCD3BD; --linie-stark:#C6BAA0;
+  --text:var(--ink); --text2:var(--mut); --text3:#9AA096;
+  --kobalt:var(--blue); --violett:#8A6A22; --verlauf:var(--paprika);
+  --warn:var(--paprika);   --warn-bg:#F7E7DD;
+  --arbeit:var(--amber);   --arbeit-bg:#F8F1DC;
+  --fertig:var(--herb);    --fertig-bg:#E9F1E6;
+  --info:var(--blue);      --info-bg:#E8EEF0;
+  --lila:#8A6A22;          --lila-bg:#F2EAD8;
+  --radius:4px; --radius-s:8px; --radius-xs:8px;
+  --schatten:0 1px 2px rgba(7,17,13,.22);
+  --schatten-tief:0 22px 50px rgba(7,17,13,.45);
+  --f-kopf:'Fraunces','Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+  --f-text:'Instrument Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--f-text);font-size:15px;line-height:1.5;color:var(--ink);min-height:100vh;
+  background:radial-gradient(1200px 600px at 50% -140px, var(--canvas2), var(--canvas) 62%) fixed var(--canvas);
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:var(--f-kopf);font-weight:700;letter-spacing:.005em;line-height:1.25;color:var(--ink)}
+.mono{font-family:var(--f-mono)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+::selection{background:var(--brass);color:#231A06}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(246,241,227,.22);border-radius:99px;border:3px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- Demo-Kennzeichnung ---------- */
+.demo-band{position:relative;z-index:60;background:var(--canvas3);color:var(--creammut);text-align:center;
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  padding:7px 14px;border-bottom:1px solid rgba(246,241,227,.10)}
+.demo-chip{font-family:var(--f-mono);font-size:9.5px;font-weight:600;letter-spacing:.16em;
+  color:var(--brass);border:1px solid rgba(194,155,75,.55);border-radius:999px;padding:3px 8px;white-space:nowrap}
+.wasserzeichen{position:fixed;right:14px;bottom:14px;z-index:40;pointer-events:none;
+  font-family:var(--f-mono);font-size:9.5px;letter-spacing:.16em;color:var(--brass);
+  background:rgba(10,31,26,.85);border:1px solid rgba(194,155,75,.4);border-radius:999px;padding:5px 11px}
+.demo-hinweis{background:var(--steel);border:1px dashed var(--linie-stark);border-radius:var(--radius);
+  padding:11px 13px;font-size:12.5px;color:var(--mut);line-height:1.55}
+.demo-hinweis b{color:var(--ink)}
+
+/* ---------- Kopfleiste (auf dem dunklen Grund) ---------- */
+.kopf{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:12px 20px;background:rgba(15,42,35,.94);backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);border-bottom:1px solid rgba(246,241,227,.14)}
+.marke{display:flex;align-items:center;gap:10px}
+.marke-zeichen{width:34px;height:34px;border-radius:8px;background:var(--canvas3);display:grid;place-items:center;
+  color:var(--cream);flex:none;border:1.5px solid var(--brass)}
+.marke-name{display:block;font-family:var(--f-kopf);font-weight:700;font-size:19px;color:var(--cream);
+  letter-spacing:.01em;line-height:1.15}
+.marke-unter{display:block;font-size:11px;color:var(--creammut)}
+.nav{display:flex;gap:2px;flex-wrap:wrap;margin-left:auto}
+.tab{position:relative;padding:8px 12px;font-family:var(--f-kopf);font-weight:600;font-size:14px;
+  letter-spacing:.02em;color:var(--creammut);white-space:nowrap;border-radius:6px}
+.tab:hover{color:var(--cream)}
+.tab.aktiv{color:var(--brass)}
+.tab.aktiv::after{content:"";position:absolute;left:12px;right:12px;bottom:1px;height:2px;background:var(--brass)}
+.kopf-rechts{display:flex;align-items:center;gap:8px}
+.uhr{font-family:var(--f-mono);font-size:12.5px;color:var(--cream);background:rgba(246,241,227,.07);
+  border:1px solid rgba(246,241,227,.16);border-radius:999px;padding:6px 11px;white-space:nowrap}
+.ikon{width:36px;height:36px;border-radius:8px;border:1px solid rgba(246,241,227,.22);background:transparent;
+  color:var(--cream);font-family:var(--f-kopf);font-weight:700;font-size:15px;display:grid;place-items:center;
+  flex:none;transition:border-color .15s, background .15s}
+.ikon:hover{border-color:var(--brass);color:var(--brass)}
+.ikon.primaer{background:var(--brass);border-color:var(--brass);color:#231A06}
+.ikon.primaer:hover{background:#D2AC5F;color:#231A06}
+
+/* ---------- Buehne & Fuss ---------- */
+.buehne{max-width:1260px;margin:0 auto;padding:24px 20px 70px}
+.fuss{text-align:center;color:var(--creammut);font-size:11.5px;padding:6px 20px 46px;line-height:1.9;
+  font-family:var(--f-mono);letter-spacing:.03em}
+.fuss b{color:var(--brass)}
+
+/* ---------- Raster ---------- */
+.raster{display:grid;gap:16px}
+.r2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.r3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.r4{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.zwei-spalten{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+
+/* ---------- Der Beleg (Karte) ---------- */
+.karte{position:relative;background:var(--paper);border:1px solid var(--linie);border-radius:var(--radius);
+  box-shadow:var(--schatten);padding:20px 16px 16px;animation:gleiten .3s ease both}
+.karte::before{content:"";position:absolute;left:0;right:0;top:0;height:7px;pointer-events:none;
+  background:radial-gradient(circle at 8px 0, var(--hinter,var(--canvas)) 5px, transparent 5.5px);
+  background-size:16px 7px;background-repeat:repeat-x}
+.karte.still{animation:none}
+.karte.glatt{padding-top:16px}
+.karte.glatt::before{display:none}
+.karte-kopf{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;
+  padding-bottom:9px;border-bottom:1px dashed var(--ink)}
+.karte-kopf h3{font-family:var(--f-mono);font-size:12px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink);flex:1;min-width:110px}
+.karte-kopf h3 .hinweis,.karte-kopf h3 input{font-family:var(--f-text);text-transform:none;letter-spacing:0}
+.zaehler{font-family:var(--f-mono);font-size:11.5px;color:var(--mut);letter-spacing:.04em}
+.trenner{height:1px;background:var(--linie);margin:12px 0}
+
+/* ---------- Abschnitts-Titel (auf dem dunklen Grund) ---------- */
+.abschnitt{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:28px 0 14px}
+.abschnitt:first-child{margin-top:0}
+.abschnitt h2{font-size:25px;color:var(--cream)}
+.abschnitt h3{font-size:18px;color:var(--cream)}
+.abschnitt .hinweis{color:var(--creammut)}
+.eyebrow{display:block;font-family:var(--f-mono);font-size:10px;font-weight:500;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--brass);margin-bottom:4px}
+.karte .eyebrow,.modal .eyebrow{color:var(--blue)}
+.hinweis{font-size:12.5px;color:var(--mut)}
+.aktionen{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* ---------- Knoepfe ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 15px;
+  border-radius:var(--radius-s);border:1px solid var(--linie);background:var(--paper);color:var(--ink);
+  font-size:13.5px;font-weight:600;text-align:center;transition:background .15s, border-color .15s, color .15s}
+.btn:hover{background:var(--steel);border-color:var(--linie-stark)}
+.btn:active{transform:translateY(1px)}
+.btn.primaer{background:var(--paprika);border-color:var(--paprika);color:#fff;
+  font-family:var(--f-kopf);font-weight:700;letter-spacing:.03em}
+.btn.primaer:hover{background:#B23D22;border-color:#B23D22}
+.btn.gruen{background:var(--herb);border-color:var(--herb);color:#fff;
+  font-family:var(--f-kopf);font-weight:700;letter-spacing:.03em}
+.btn.gruen:hover{background:#26684899}
+.btn.gefahr{background:transparent;color:var(--paprika);border-color:var(--paprika)}
+.btn.gefahr:hover{background:var(--warn-bg)}
+.btn.klein{padding:5px 11px;font-size:12px;border-radius:999px;font-family:var(--f-text);
+  font-weight:600;letter-spacing:0}
+.btn.gross{width:100%;padding:13px;font-size:15px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+/* ---------- Status-Chips (gedeckt, Bedeutung ueberall gleich) ---------- */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;
+  font-size:11.5px;font-weight:600;white-space:nowrap;background:var(--steel);color:var(--mut)}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.chip.ohne::before{display:none}
+.chip.info{background:var(--info-bg);color:var(--blue)}
+.chip.arbeit{background:var(--arbeit-bg);color:var(--amber)}
+.chip.fertig{background:var(--fertig-bg);color:var(--herb)}
+.chip.warn{background:var(--warn-bg);color:var(--paprika)}
+.chip.lila{background:var(--lila-bg);color:var(--lila)}
+.chip.voll{background:var(--paprika);color:#fff}
+
+/* ---------- Ampel ---------- */
+.ampel{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.ampel.gruen{background:var(--herb);box-shadow:0 0 0 3px var(--fertig-bg)}
+.ampel.gelb{background:var(--amber);box-shadow:0 0 0 3px var(--arbeit-bg)}
+.ampel.rot{background:var(--paprika);box-shadow:0 0 0 3px var(--warn-bg);animation:pulsring 1.8s infinite}
+
+/* ---------- Kennzahlen (klein und ruhig) ---------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.kpi{background:var(--paper);border:1px solid var(--linie);border-radius:var(--radius);
+  padding:11px 13px;box-shadow:var(--schatten)}
+.kpi .label{font-family:var(--f-mono);font-size:9.5px;font-weight:500;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--mut)}
+.kpi .wert{font-family:var(--f-mono);font-weight:600;font-size:21px;line-height:1.2;margin-top:5px;color:var(--ink)}
+.kpi .wert small{font-size:12px;color:var(--mut)}
+.kpi .unter{font-size:11.5px;color:var(--mut);margin-top:2px}
+.kpi.warnung .wert{color:var(--paprika)}
+.kpi.gut .wert{color:var(--herb)}
+
+/* ---------- Zeilen ---------- */
+.zeile{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px dotted var(--linie);flex-wrap:wrap}
+.zeile:last-child{border-bottom:none}
+.zeile.klick{cursor:pointer;border-radius:var(--radius);transition:background .12s}
+.zeile.klick:hover{background:var(--steel)}
+.zeile .zeit{font-family:var(--f-mono);font-size:12.5px;color:var(--mut);flex:none}
+.zeile .name{font-weight:600;flex:1;min-width:110px}
+.zeile .meta{font-size:12.5px;color:var(--mut)}
+
+/* ---------- Leere Zustaende ---------- */
+.leer{text-align:center;color:var(--mut);padding:24px 16px;font-size:13px;line-height:1.6;
+  background:var(--steel);border:1px dashed var(--linie-stark);border-radius:var(--radius)}
+.leer b{display:block;font-family:var(--f-kopf);font-size:15px;color:var(--ink);margin-bottom:4px}
+
+/* ---------- Fortschritt ---------- */
+.fortschritt{height:7px;background:var(--steel);border-radius:99px;overflow:hidden;border:1px solid var(--linie)}
+.fortschritt>i{display:block;height:100%;background:var(--brass);transition:width .5s ease}
+.fortschritt.ueber>i{background:var(--paprika)}
+.fortschritt.fertig>i{background:var(--herb)}
+.spur-kopf{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--mut);margin-bottom:5px}
+.balken-zeile{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:12.5px}
+.balken-zeile .bz-name{width:120px;flex:none;color:var(--mut)}
+.balken-zeile .bz-wert{font-family:var(--f-mono);font-size:11.5px;width:64px;text-align:right;flex:none}
+
+/* ---------- Formulare ---------- */
+.feld{margin-bottom:12px}
+.feld label,label.lbl{display:block;font-family:var(--f-mono);font-size:10px;font-weight:500;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--mut);margin-bottom:5px}
+input,select,textarea{width:100%;font-family:var(--f-text);font-size:14px;padding:9px 11px;
+  border:1px solid var(--linie);border-radius:var(--radius-s);background:var(--grund);color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brass);box-shadow:0 0 0 3px rgba(194,155,75,.22)}
+textarea{min-height:76px;resize:vertical}
+.feld-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.schmal{width:auto;min-width:130px}
+.haken{display:flex;align-items:center;gap:9px;font-family:var(--f-text);font-size:14px;font-weight:500;
+  text-transform:none;letter-spacing:0;color:var(--ink);padding:7px 0;cursor:pointer}
+.haken input{width:17px;height:17px;accent-color:var(--herb)}
+.fehler{color:var(--paprika);font-weight:600;font-size:13px;min-height:18px}
+.erfolg{color:var(--herb);font-weight:600;font-size:13px}
+.einst-zeile{display:flex;gap:8px;align-items:center;margin-bottom:7px}
+.einst-zeile input,.einst-zeile select{flex:1;min-width:0}
+.regel-zeile{display:flex;align-items:center;gap:14px;padding:12px 2px;border-bottom:1px dotted var(--linie)}
+.regel-zeile:last-child{border-bottom:none}
+.regel-zeile .rz-info{flex:1}
+.regel-zeile .rz-name{font-weight:600;font-size:14px}
+.regel-zeile .rz-text{font-size:12.5px;color:var(--mut);margin-top:2px;line-height:1.45}
+.regel-zeile input[type=number]{width:92px;text-align:center;font-family:var(--f-mono)}
+.regel-zeile input[type=text],.regel-zeile select{width:190px}
+
+/* ---------- Unter-Reiter ---------- */
+.untertabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.untertab{border:1px solid var(--linie);background:var(--paper);border-radius:999px;padding:6px 13px;
+  font-size:12.5px;font-weight:600;color:var(--mut);position:relative}
+.untertab:hover{border-color:var(--brass);color:var(--ink)}
+.untertab.aktiv{background:var(--brass);border-color:var(--brass);color:#231A06}
+.untertab .punkt{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;
+  background:var(--paprika);border:2px solid var(--canvas)}
+
+/* ---------- Ereignis-Log ---------- */
+.log{max-height:330px;overflow-y:auto;padding-right:4px}
+.log-eintrag{display:flex;gap:9px;font-size:12.5px;color:var(--mut);padding:6px 2px;
+  border-bottom:1px dotted var(--linie);line-height:1.45}
+.log-eintrag:last-child{border-bottom:none}
+.log-zeit{font-family:var(--f-mono);font-size:11px;color:var(--blue);flex:none;padding-top:1px}
+.log-wer{color:var(--ink);font-weight:600}
+
+/* ---------- Modal ---------- */
+.modal-hg{position:fixed;inset:0;z-index:100;background:rgba(7,17,13,.62);backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{position:relative;background:var(--paper);border:1px solid var(--linie);border-radius:10px;
+  box-shadow:var(--schatten-tief);padding:22px;width:min(520px,100%);max-height:88vh;overflow-y:auto;
+  animation:gleiten .22s ease both}
+.modal.gross{width:min(760px,100%)}
+.modal h2{font-size:21px;margin:0 0 12px;padding-bottom:10px;border-bottom:1px dashed var(--ink)}
+.modal-fuss{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px;
+  padding-top:14px;border-top:1px dashed var(--linie)}
+.modal-block{border-top:1px dotted var(--linie);padding-top:14px;margin-top:14px}
+.modal-block h3{font-family:var(--f-mono);font-size:11.5px;font-weight:600;letter-spacing:.09em;
+  text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fliess{font-size:13.5px;color:var(--mut);line-height:1.65}
+.fliess b{color:var(--ink)}
+.fliess+.fliess{margin-top:8px}
+.hilfe-block{margin-bottom:16px}
+.hilfe-block h3{font-family:var(--f-kopf);font-size:15px;margin-bottom:5px;text-transform:none;letter-spacing:0}
+.hilfe-block p,.hilfe-block li{font-size:13.5px;color:var(--mut);line-height:1.65}
+.hilfe-block ul{padding-left:18px;margin-top:4px}
+.hilfe-block b{color:var(--ink)}
+
+/* ---------- Bewegung ---------- */
+@keyframes gleiten{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes pulsring{0%{box-shadow:0 0 0 0 rgba(198,71,42,.45)}100%{box-shadow:0 0 0 12px rgba(198,71,42,0)}}
+.puls{animation:pulsring .9s ease-out 2}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- Klein ---------- */
+@media(max-width:900px){
+  .kopf{padding:10px 14px;gap:10px}
+  .marke-unter{display:none}
+  .nav{order:5;width:100%;margin-left:0;justify-content:flex-start;overflow-x:auto}
+  .kopf-rechts{margin-left:auto}
+  .buehne{padding:18px 14px 70px}
+  .zwei-spalten{grid-template-columns:1fr}
+  .feld-2{grid-template-columns:1fr}
+  .regel-zeile{flex-wrap:wrap}
+  .regel-zeile .rz-info{flex-basis:100%}
+  .abschnitt h2{font-size:22px}
+}
+
+/* ---------- Nur PickFlow: Board, Scan-Ansicht, Packplatz ---------- */
+
+/* Auftrags-Board */
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.board-spalte{background:var(--getoent);border:1px solid var(--linie);border-radius:var(--radius);padding:11px;min-height:120px;position:relative;overflow:hidden}
+.board-spalte::before{content:"";position:absolute;top:0;left:0;right:0;height:4px}
+.board-spalte:nth-child(1)::before{background:var(--brass)}
+.board-spalte:nth-child(2)::before{background:linear-gradient(90deg,#E0A400,#9A6A00)}
+.board-spalte:nth-child(3)::before{background:linear-gradient(90deg,#18B877,#0B7A4F)}
+.board-spalte:nth-child(4)::before{background:linear-gradient(90deg,#8B97C2,#5A6180)}
+.board-kopf{display:flex;justify-content:space-between;align-items:center;padding:4px 4px 11px}
+.board-kopf h3{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text2)}
+.auftrag{background:var(--flaeche);border:1px solid var(--linie);border-left:4px solid var(--linie);
+  border-radius:var(--radius-s);padding:12px;margin-bottom:9px;box-shadow:var(--schatten);
+  animation:gleiten .35s ease both}
+.auftrag.p-express{border-left-color:var(--warn)}
+.auftrag.p-eilig{border-left-color:#E0A400}
+.auftrag.p-normal{border-left-color:var(--kobalt)}
+.auftrag.kritisch{border-color:var(--warn);box-shadow:0 0 0 2px var(--warn-bg)}
+.auftrag-kopf{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.auftrag-nr{font-family:var(--f-mono);font-weight:700;font-size:14.5px}
+.auftrag-kunde{font-size:12.5px;color:var(--text2);margin:4px 0 8px}
+.auftrag-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;align-items:center}
+.auftrag-fuss{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.auftrag-fuss select{flex:1;min-width:0;font-size:12.5px;padding:7px 9px}
+.fortschritt-zeile{display:flex;align-items:center;gap:9px;margin-top:8px}
+.fortschritt-zeile .fortschritt{flex:1}
+.fortschritt-zeile .mono{font-size:11.5px;font-weight:700;color:var(--text2);white-space:nowrap}
+
+/* Picker-Ansicht (Handscanner) */
+.geraet{max-width:470px;margin:0 auto}
+.geraet-kopf{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+.avatar{width:40px;height:40px;border-radius:13px;background:var(--brass);color:#fff;display:grid;place-items:center;
+  font-family:var(--f-kopf);font-weight:800;font-size:13px;flex:none;box-shadow:0 8px 18px -8px rgba(32,43,37,.16)}
+.auftrag-taste{width:100%;text-align:left;background:var(--flaeche);border:1px solid var(--linie);
+  border-radius:var(--radius);padding:15px;margin-bottom:10px;box-shadow:var(--schatten);transition:transform .12s,border-color .15s}
+.auftrag-taste:hover{transform:translateY(-2px);border-color:var(--kobalt)}
+.auftrag-taste .at-kopf{display:flex;justify-content:space-between;align-items:center}
+.auftrag-taste .at-nr{font-family:var(--f-mono);font-weight:700;font-size:16px}
+.auftrag-taste .at-sub{font-size:12.5px;color:var(--text2);margin-top:4px}
+.auftrag-taste .at-cut{font-family:var(--f-mono);font-size:11.5px;font-weight:700;margin-top:6px;color:var(--text2)}
+.auftrag-taste .at-cut.knapp{color:var(--warn)}
+
+/* Signatur: Lagerplatz als Versand-Etikett */
+.platz-rahmen{position:relative;padding:16px 10px;margin-bottom:12px;text-align:center}
+.platz-rahmen::before,.platz-rahmen::after,.platz-rahmen i::before,.platz-rahmen i::after{
+  content:"";position:absolute;width:16px;height:16px;border:2.5px solid var(--linie-stark)}
+.platz-rahmen::before{top:0;left:0;border-right:none;border-bottom:none;border-radius:6px 0 0 0}
+.platz-rahmen::after{top:0;right:0;border-left:none;border-bottom:none;border-radius:0 6px 0 0}
+.platz-rahmen i::before{bottom:0;left:0;border-right:none;border-top:none;border-radius:0 0 0 6px}
+.platz-rahmen i::after{bottom:0;right:0;border-left:none;border-top:none;border-radius:0 0 6px 0}
+.platz-code{font-family:var(--f-mono);font-weight:800;font-size:clamp(40px,12vw,56px);letter-spacing:-.02em;line-height:1.05;
+  background:var(--brass);-webkit-background-clip:text;background-clip:text;color:transparent;
+  padding-bottom:10px;border-bottom:2px dashed var(--linie)}
+.platz-sub{display:flex;justify-content:center;gap:7px;margin-top:9px;flex-wrap:wrap}
+.artikel-karte{text-align:center;padding:18px}
+.artikel-zeichen{font-size:42px;line-height:1;width:80px;height:80px;border-radius:22px;background:var(--getoent);
+  display:grid;place-items:center;margin:0 auto 10px}
+.artikel-name{font-family:var(--f-kopf);font-weight:800;font-size:19px}
+.artikel-nr{font-family:var(--f-mono);font-size:12.5px;color:var(--text2);margin-top:3px}
+.artikel-menge{font-family:var(--f-mono);font-weight:800;font-size:48px;margin-top:8px;line-height:1;color:var(--kobalt)}
+.artikel-menge small{font-size:18px;color:var(--text2)}
+.scan-feld{font-family:var(--f-mono);font-size:17px;font-weight:700;padding:14px;text-align:center}
+.stepper{display:flex;align-items:center;justify-content:center;gap:16px;margin:14px 0}
+.stepper button{width:66px;height:66px;border-radius:22px;background:var(--getoent);border:1.5px solid var(--linie);
+  font-size:30px;font-weight:800;color:var(--kobalt);transition:transform .1s}
+.stepper button:active{transform:scale(.92)}
+.stepper .wert{font-family:var(--f-mono);font-weight:800;font-size:46px;min-width:86px;text-align:center}
+.stopp{border:2px solid var(--warn);background:var(--warn-bg);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:12px}
+.stopp h3{color:var(--warn);font-size:20px;margin-bottom:8px}
+.stopp .codes{font-family:var(--f-mono);font-size:14px;background:var(--flaeche);border-radius:12px;padding:12px;line-height:1.8;margin:10px 0}
+
+/* Packplatz */
+.pack-raster{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.check-zeile{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:12px;border:1px solid var(--linie);
+  margin-bottom:7px;background:var(--flaeche);cursor:pointer;user-select:none;transition:.15s}
+.check-zeile.an{background:var(--fertig-bg);border-color:var(--fertig)}
+.check-zeile .box{width:26px;height:26px;border-radius:9px;border:2px solid var(--linie);flex:none;display:grid;place-items:center;
+  font-weight:900;color:#fff;font-size:13px;background:var(--flaeche)}
+.check-zeile.an .box{background:var(--fertig);border-color:var(--fertig)}
+.check-zeile .cz-name{flex:1;font-size:13.5px;font-weight:600}
+.check-zeile .cz-menge{font-family:var(--f-mono);font-weight:700;font-size:14px}
+.pack-wahl{display:flex;gap:7px;margin:12px 0;flex-wrap:wrap}
+.tour-gruppe{margin-bottom:18px}
+.tour-kopf{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;
+  background:var(--getoent);border:1px solid var(--linie);border-radius:var(--radius-s);padding:11px 14px;margin-bottom:10px}
+.tour-kopf .tk-name{font-family:var(--f-kopf);font-weight:800;font-size:14px}
+.lade-zeile{display:flex;align-items:center;gap:11px;padding:12px 14px;border:1px solid var(--linie);
+  border-radius:var(--radius-s);margin-bottom:8px;background:var(--flaeche);box-shadow:var(--schatten);flex-wrap:wrap}
+.lade-zeile .lz-info{flex:1;min-width:150px}
+.lade-zeile .lz-nr{font-family:var(--f-mono);font-weight:700;font-size:14px}
+.lade-zeile .lz-sub{font-size:11.5px;color:var(--text2);margin-top:2px}
+.tour-fertig{background:var(--fertig-bg);border:1.5px solid var(--fertig);color:var(--fertig);border-radius:var(--radius);
+  padding:18px;text-align:center;font-family:var(--f-kopf);font-weight:800;font-size:16px}
+
+/* Warnungen */
+.warnung-zeile{display:flex;gap:10px;align-items:flex-start;padding:11px;border-radius:var(--radius-s);margin-bottom:8px;font-size:12.5px}
+.warnung-zeile.rot{background:var(--warn-bg);color:var(--warn)}
+.warnung-zeile.gelb{background:var(--arbeit-bg);color:var(--arbeit)}
+.warnung-zeile .wz-text{flex:1;line-height:1.4}
+.warnung-zeile .wz-zeit{font-family:var(--f-mono);font-size:10.5px;opacity:.75;display:block;margin-top:2px}
+.warnung-zeile button{font-size:11px;font-weight:800;border-radius:9px;padding:5px 9px;flex:none;
+  background:rgba(255,255,255,.75);color:inherit}
+.bestand-stepper{display:inline-flex;align-items:center;gap:8px;background:var(--getoent);border:1px solid var(--linie);
+  border-radius:999px;padding:4px}
+.bestand-stepper button{width:34px;height:34px;border-radius:50%;background:var(--flaeche);border:1px solid var(--linie);
+  font-weight:800;color:var(--kobalt);font-size:17px}
+.bestand-stepper b{font-family:var(--f-mono);min-width:34px;text-align:center;font-size:15px}
+.bestand-stepper b.wenig{color:var(--warn)}
+.pos-bauer{background:var(--getoent);border:1px solid var(--linie);border-radius:var(--radius-s);padding:12px;margin-bottom:12px}
+.pos-zeile{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;background:var(--flaeche);
+  border-radius:10px;margin-bottom:6px;font-size:13.5px}
+.pos-zeile .ps{display:inline-flex;align-items:center;gap:8px}
+.pos-zeile .ps button{width:30px;height:30px;border-radius:50%;background:var(--getoent);border:1px solid var(--linie);
+  font-size:16px;font-weight:800;color:var(--kobalt)}
+.pos-zeile .ps b{font-family:var(--f-mono);min-width:24px;text-align:center}
+
+@media(max-width:1100px){ .board{grid-template-columns:repeat(2,1fr)} .pack-raster{grid-template-columns:1fr} }
+@media(max-width:700px){ .board{grid-template-columns:1fr} }
+
+/* ============================================================
+   Neuausrichtung auf das Beleg-System (v2)
+   ============================================================ */
+/* Board = dunkles Brett, darauf haengen die Zettel */
+.board-spalte{background:var(--canvas2);border:1px solid rgba(246,241,227,.12);border-radius:var(--radius);padding:12px}
+.board-spalte::before{display:none}
+.board-kopf{padding:2px 2px 9px;margin-bottom:10px;border-bottom:1px dashed rgba(246,241,227,.20)}
+.board-kopf h3{font-family:var(--f-mono);letter-spacing:.10em;color:var(--cream)}
+.board-kopf .zaehler{color:var(--creammut)}
+.board-spalte .leer{background:rgba(246,241,227,.06);border-color:rgba(246,241,227,.22);color:var(--creammut)}
+.board-spalte .leer b{color:var(--cream)}
+.auftrag{background:var(--paper);border-radius:var(--radius);box-shadow:var(--schatten)}
+.auftrag.p-express{border-left-color:var(--paprika)}
+.auftrag.p-eilig{border-left-color:var(--amber)}
+.auftrag.p-normal{border-left-color:var(--blue)}
+.auftrag.kritisch{border-color:var(--paprika);background:var(--warn-bg);box-shadow:none}
+.auftrag-nr{font-family:var(--f-mono)}
+
+/* Handscanner */
+.geraet-kopf{color:var(--cream)}
+.geraet-kopf b{font-family:var(--f-kopf);font-size:16px}
+.geraet-kopf .hinweis{color:var(--creammut)}
+.avatar{background:var(--ink);color:var(--cream);border-radius:var(--radius-s);box-shadow:none}
+.auftrag-taste{background:var(--paper);border-radius:var(--radius);box-shadow:var(--schatten)}
+.auftrag-taste:hover{border-color:var(--brass);transform:none}
+.auftrag-taste .at-nr{font-family:var(--f-mono)}
+.auftrag-taste .at-cut.knapp{color:var(--paprika)}
+.platz-rahmen::before,.platz-rahmen::after,.platz-rahmen i::before,.platz-rahmen i::after{border-color:var(--linie-stark)}
+.platz-code{background:none;-webkit-text-fill-color:var(--ink);color:var(--ink);
+  border-bottom:2px dashed var(--linie)}
+.artikel-karte{background:var(--steel);border:1px solid var(--linie);border-radius:var(--radius)}
+.artikel-zeichen{background:var(--paper);border:1px solid var(--linie);border-radius:var(--radius-s)}
+.artikel-name{font-family:var(--f-kopf)}
+.artikel-menge{color:var(--ink)}
+.stepper button{background:var(--steel);border:1px solid var(--linie);color:var(--ink);border-radius:var(--radius-s)}
+.stepper .wert{color:var(--ink)}
+.scan-feld{border-radius:var(--radius-s);border:1px solid var(--linie)}
+.stopp{border-radius:var(--radius);border:1px solid var(--paprika)}
+.stopp .codes{border-radius:var(--radius);border:1px dashed var(--linie)}
+
+/* Packplatz & Verladung */
+.check-zeile{border-radius:var(--radius)}
+.check-zeile .box{border-radius:5px}
+.tour-kopf{border-radius:var(--radius)}
+.tour-kopf .tk-name{font-family:var(--f-kopf)}
+.lade-zeile{border-radius:var(--radius);box-shadow:none}
+.lade-zeile .lz-nr{font-family:var(--f-mono)}
+.tour-fertig{border-radius:var(--radius);font-family:var(--f-kopf)}
+.warnung-zeile{border-radius:var(--radius)}
+.warnung-zeile button{border-radius:5px;background:rgba(255,255,255,.6)}
+.bestand-stepper{border-radius:999px}
+.bestand-stepper button,.pos-zeile .ps button{background:var(--paper);border:1px solid var(--linie);color:var(--ink)}
+.pos-bauer{border-radius:var(--radius)}
+.pos-zeile{border-radius:5px}
+
+</style>
+</head>
+<body>
+
+<!-- Demo-Kennzeichnung 1/4: Band ueber der gesamten Breite -->
+<div class="demo-band">Demo-Version &middot; Beispieldaten eines fiktiven Lagers &middot; keine Anmeldung &middot; nichts wird gespeichert</div>
+
+<header class="kopf">
+  <div class="marke">
+    <span class="marke-zeichen"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/></svg></span>
+    <span>
+      <b class="marke-name" id="appName">PickFlow</b>
+      <span class="marke-unter" id="appUnter">Lager & Logistik</span>
+    </span>
+    <!-- Demo-Kennzeichnung 2/4: Chip neben dem Logo -->
+    <span class="demo-chip">DEMO</span>
+  </div>
+  <nav class="nav" id="nav"></nav>
+  <div class="kopf-rechts">
+    <span class="uhr mono" id="uhr">--:--:--</span>
+    <button class="ikon" onclick="oeffneEinstellungen()" title="Einstellungen" aria-label="Einstellungen">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+    </button>
+    <button class="ikon primaer" onclick="oeffneHilfe()" title="Hilfe - so funktioniert diese Demo" aria-label="Hilfe">?</button>
+  </div>
+</header>
+
+<main class="buehne" id="app"></main>
+
+<!-- Demo-Kennzeichnung 3/4: Fusszeile -->
+<footer class="fuss">
+  PickFlow &middot; Mini-App von APPWERK<br>
+  <b>DEMO-VERSION</b> &middot; Alle Namen, Zahlen und Vorgaenge sind Beispieldaten &middot; Kein Login, keine Konten &middot; Nichts wird gespeichert &middot; Neuladen setzt die Demo zurueck
+</footer>
+
+<!-- Demo-Kennzeichnung 4/4: dauerhaftes Wasserzeichen -->
+<div class="wasserzeichen" aria-hidden="true">DEMO-VERSION</div>
+<div id="modalWurzel"></div>
+
+<script>
+/* ============================================================
+   APPWERK · GEMEINSAME BASIS  v1.0
+   Zeichengleich in allen Demo-Apps: Helfer, Navigation, Modale,
+   Ereignis-Log, Live-Uhr, Demo-Reset. Darunter folgt die
+   Fachlogik der jeweiligen App.
+
+   DEMO-HINWEIS: Alle Daten liegen nur im Arbeitsspeicher.
+   Kein Login, keine Konten, kein Server, keine Speicherung.
+   Neuladen der Seite setzt die Demo zurueck.
+   ============================================================ */
+"use strict";
+
+const MIN = 60000, STD = 3600000, TAG = 86400000;
+const $  = (s, w = document) => w.querySelector(s);
+const $$ = (s, w = document) => Array.from(w.querySelectorAll(s));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+let _idZaehler = 100;
+const neueId = p => p + (_idZaehler++) + Math.random().toString(36).slice(2, 5);
+
+const hhmm     = t => new Date(t).toLocaleTimeString("de-DE", { hour:"2-digit", minute:"2-digit" });
+const hhmmss   = t => new Date(t).toLocaleTimeString("de-DE", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+const datumLang= t => new Date(t).toLocaleDateString("de-DE", { weekday:"long", day:"2-digit", month:"long", year:"numeric" });
+const eur      = n => Number(n || 0).toFixed(2).replace(".", ",") + " €";
+const inMin    = m => Date.now() + m * MIN;
+const vorMin   = m => Date.now() - m * MIN;
+
+function dauerText(ms){
+  if (ms < 0) ms = -ms;
+  const std = Math.floor(ms / STD), min = Math.floor((ms % STD) / MIN);
+  if (ms >= TAG) return Math.floor(ms / TAG) + " Tg " + (std % 24) + " Std";
+  if (std > 0)   return std + " Std " + String(min).padStart(2, "0") + " Min";
+  return min + " Min";
+}
+function restText(ms){
+  if (ms <= 0) return "00:00";
+  const s = Math.floor(ms / 1000);
+  if (s >= 3600) return Math.floor(s / 3600) + " Std " + String(Math.floor((s % 3600) / 60)).padStart(2, "0") + " Min";
+  return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+}
+function zeitHeute(hhmmStr){
+  const [h, m] = String(hhmmStr || "00:00").split(":").map(Number);
+  const d = new Date(); d.setHours(h || 0, m || 0, 0, 0); return d.getTime();
+}
+function initialen(name){
+  const t = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!t.length) return "?";
+  return t.length > 1 ? (t[0][0] + ". " + t[t.length - 1][0] + ".") : (t[0][0] + ".");
+}
+function kuerzel(name){
+  const sauber = String(name || "").replace(/[^\p{L}\p{N} ]/gu, "").trim().split(/\s+/).filter(Boolean);
+  if (!sauber.length) return "??";
+  return (sauber.length > 1 ? sauber[0][0] + sauber[sauber.length - 1][0] : sauber[0].slice(0, 2)).toUpperCase();
+}
+
+/* ---------- Ereignis-Log (in jeder App gleich aufgebaut) ---------- */
+function loggen(text, wer){
+  state.log.unshift({ zeit: Date.now(), wer: wer || "System", text });
+  if (state.log.length > 80) state.log.pop();
+}
+function logKarte(){
+  return '<div class="karte still"><div class="karte-kopf"><h3>Ereignis-Log</h3>' +
+    '<span class="zaehler">' + state.log.length + '</span>' +
+    '<span class="hinweis">jede Aktion mit Uhrzeit</span></div><div class="log">' +
+    (state.log.length
+      ? state.log.map(l => '<div class="log-eintrag"><span class="log-zeit">' + hhmmss(l.zeit) + '</span>' +
+          '<span><b class="log-wer">' + esc(l.wer) + '</b> · ' + esc(l.text) + '</span></div>').join("")
+      : '<div class="leer">Noch keine Ereignisse in dieser Demo-Sitzung.</div>') +
+    '</div></div>';
+}
+
+/* ---------- Modale ---------- */
+function modalOeffnen(html, gross){
+  $("#modalWurzel").innerHTML =
+    '<div class="modal-hg" onclick="if(event.target===this)modalSchliessen()">' +
+    '<div class="modal' + (gross ? " gross" : "") + '" role="dialog" aria-modal="true">' + html + '</div></div>';
+  const erst = $("#modalWurzel input, #modalWurzel textarea, #modalWurzel select");
+  if (erst) erst.focus();
+}
+function modalSchliessen(){ $("#modalWurzel").innerHTML = ""; }
+function modalInfo(titel, html){
+  modalOeffnen('<h2>' + titel + '</h2><p class="fliess">' + html + '</p>' +
+    '<div class="modal-fuss"><button class="btn primaer" onclick="modalSchliessen()">Verstanden</button></div>');
+}
+let _antwort = null;
+function modalFrage(titel, html, fn, knopf){
+  _antwort = fn;
+  modalOeffnen('<h2>' + titel + '</h2><p class="fliess">' + html + '</p>' +
+    '<div class="modal-fuss"><button class="btn" onclick="modalSchliessen()">Abbrechen</button>' +
+    '<button class="btn gefahr" onclick="modalJa()">' + (knopf || "Ja, ausführen") + '</button></div>');
+}
+function modalJa(){ const f = _antwort; _antwort = null; modalSchliessen(); if (f) f(); }
+function feldWert(id){ const e = document.getElementById(id); return e ? e.value.trim() : ""; }
+function feldZahl(id, ersatz){ const e = document.getElementById(id); const n = e ? parseFloat(e.value) : NaN; return isNaN(n) ? ersatz : n; }
+
+/* ---------- Navigation (Ansichten statt Konten) ---------- */
+function navBauen(){
+  $("#nav").innerHTML = ANSICHTEN.map(a =>
+    '<button class="tab' + (state.ansicht === a.id ? " aktiv" : "") + '" onclick="wechsle(\'' + a.id + '\')">' +
+    a.label + '</button>').join("");
+}
+function wechsle(id){ state.ansicht = id; if (typeof beimWechsel === "function") beimWechsel(id); rendern(); window.scrollTo({ top:0, behavior:"instant" }); }
+
+/* ---------- Hervorhebung geaenderter Elemente ---------- */
+function puls(id){ state.puls = id; }
+function pulsAnwenden(){
+  if (!state.puls) return;
+  const el = $('[data-puls="' + state.puls + '"]');
+  if (el) el.classList.add("puls");
+  state.puls = null;
+}
+
+/* ---------- Live-Uhr ---------- */
+function uhrTick(){
+  const el = $("#uhr");
+  if (el) el.textContent = hhmmss(Date.now());
+}
+
+/* ---------- Demo zuruecksetzen (in jeder App unter Einstellungen) ---------- */
+function demoZuruecksetzen(){
+  modalFrage("Demo zurücksetzen?",
+    "Alle Änderungen dieser Sitzung gehen verloren, die Beispieldaten werden frisch geladen. " +
+    "In der Demo werden ohnehin keine Daten gespeichert.",
+    () => location.reload(), "Ja, zurücksetzen");
+}
+
+/* ---------- Start ---------- */
+function starten(){
+  document.getElementById("appName").textContent  = state.name;
+  document.getElementById("appUnter").textContent = state.unter;
+  navBauen();
+  rendern();
+  uhrTick();
+  setInterval(uhrTick, 1000);
+  setInterval(() => { if (typeof takt === "function") takt(); }, 1000);
+}
+
+/* ============================================================
+   PICKFLOW · Demo-Fachlogik
+   Kein Login, keine Konten, keine Rollen: Alle Ansichten sind
+   ueber die Reiter oben frei zugaenglich (Demo-Modus).
+   ============================================================ */
+
+const ANSICHTEN = [
+  { id:"leitstand",  label:"Leitstand" },
+  { id:"picker",     label:"Picker (Scanner)" },
+  { id:"packplatz",  label:"Packplatz" },
+  { id:"stammdaten", label:"Stammdaten" },
+  { id:"auswertung", label:"Auswertung" }
+];
+
+const SCHICHTSTART = vorMin(240);
+const PRIO_TEXT = { normal:"Normal", eilig:"Eilig", express:"Express" };
+
+const state = {
+  name:  "PickFlow",
+  unter: "Demo · Kommissionieren, Packen, Verladen",
+  ansicht: "leitstand",
+  stammTab: "artikel",
+  session: null,        // laufender Pick-Vorgang
+  menge: 0,
+  aktiverPicker: "p3",
+  scansGesamt: 610,
+  scansOk: 605,
+  kritisch: new Set(),
+  warnungen: [],
+  puls: null,
+  log: [],
+  einst: {
+    firma: "PickFlow",
+    pickSek: 50,            // Ø-Zeit pro Pick (Basis der Cut-off-Warnung)
+    pufferMin: 16,          // Puffer fuer Kontrolle, Packen, Verladen
+    abfahrtWarnMin: 15,     // ab dieser Restzeit faerbt sich die Abfahrt rot
+    zielGenauigkeit: 99,    // Ziel-Pickgenauigkeit in %
+    ueberpicken: false,     // mehr als die Soll-Menge erlaubt?
+    scanKnopf: true,        // "Scan simulieren" anzeigen (Demo-Hilfe)
+    kontrolle: true,        // Packplatz: Positionen einzeln abhaken
+    route: "schlange",      // schlange | linear
+    kategorien: [
+      { name:"Werkzeug", zeichen:"🔧" }, { name:"Elektro", zeichen:"🔌" },
+      { name:"Sanitär", zeichen:"🚿" },  { name:"Befestigung", zeichen:"🔩" },
+      { name:"Farben", zeichen:"🎨" }
+    ],
+    packstuecke: ["Karton S","Karton M","Karton L","Palette"]
+  },
+  artikel: [], picker: [], touren: [], auftraege: []
+};
+
+/* ---------- Nachschlagen ---------- */
+const art     = id => state.artikel.find(a => a.id === id);
+const artNr   = nr => state.artikel.find(a => a.artikelnummer === nr);
+const pk      = id => state.picker.find(p => p.id === id);
+const tour    = id => state.touren.find(t => t.id === id);
+const auftrag = id => state.auftraege.find(o => o.id === id);
+const katZeichen = name => (state.einst.kategorien.find(k => k.name === name) || {}).zeichen || "📦";
+const platzCode = lp => "G" + String(lp.gang).padStart(2,"0") + "-R" + String(lp.regal).padStart(2,"0") + "-B" + lp.boden;
+
+/* ---------- Demo-Daten ---------- */
+function A(id, nr, name, kat, g, r, b, bestand, mind, gewicht){
+  return { id, artikelnummer:nr, name, kategorie:kat, lagerplatz:{ gang:g, regal:r, boden:b },
+           bestand, mindestbestand:mind, gewicht };
+}
+function P(artikelId, soll, status = "offen", ist = null){
+  return { artikelId, soll, ist, status, kontrolle:false, einmalGemeldet:false };
+}
+function O(id, kunde, prio, cutMin, tourId, positionen, status, pickerId, extra){
+  return Object.assign({ id, kunde, prio, cutoff: inMin(cutMin), tour:tourId, positionen, status,
+    picker: pickerId, packstueck:null, zeiten:{ start:null, fertig:null } }, extra || {});
+}
+
+function demoDaten(){
+  state.artikel = [
+    A("a01","1042","Akkuschrauber 18V","Werkzeug",1, 2,1, 24, 8, 1.6),
+    A("a02","1077","Schlagbohrmaschine 850W","Werkzeug",1, 5,2, 11, 4, 2.9),
+    A("a03","1123","Wasserwaage 60cm","Werkzeug",1, 9,1, 32,10, 0.7),
+    A("a04","1188","Hammer 500g Fiberglas","Werkzeug",1,12,3, 45,15, 0.6),
+    A("a05","1215","Bit-Set 32-teilig","Werkzeug",1,14,2,  6, 8, 0.3),
+    A("a06","2031","Kabeltrommel 25m","Elektro",2, 3,1, 18, 6, 4.2),
+    A("a07","2087","LED-Baustrahler 30W","Elektro",2, 6,2, 22, 8, 1.1),
+    A("a08","2114","Steckdosenleiste 6-fach","Elektro",2, 8,1, 40,12, 0.5),
+    A("a09","2156","Installationskabel NYM 3x1,5","Elektro",2,11,3, 15, 5,12.0),
+    A("a10","2199","Spannungsprüfer digital","Elektro",2,13,1, 28,10, 0.1),
+    A("a11","3022","Dichtungsring-Set","Sanitär",3, 2,2, 55,20, 0.2),
+    A("a12","3068","Eckventil 1/2 Zoll","Sanitär",3, 5,1, 34,12, 0.3),
+    A("a13","3095","Flexschlauch 50cm","Sanitär",3, 8,3, 26,10, 0.4),
+    A("a14","3140","Siphon-Set Waschbecken","Sanitär",3,11,2, 19, 6, 0.6),
+    A("a15","3177","Hanf- und Fermit-Paste","Sanitär",3,14,1,  4,10, 0.3),
+    A("a16","4015","Spax-Schrauben 4x40 (500)","Befestigung",4, 1,1, 60,20, 1.8),
+    A("a17","4052","Dübel-Sortiment 8mm","Befestigung",4, 4,2, 48,15, 0.9),
+    A("a18","4098","Gewindestange M10 1m","Befestigung",4, 7,3, 30,10, 0.7),
+    A("a19","4126","Winkelverbinder 90x90","Befestigung",4,10,1, 72,25, 0.2),
+    A("a20","4171","Kabelbinder 300mm (100)","Befestigung",4,13,2, 38,12, 0.4),
+    A("a21","5008","Wandfarbe Weiß 10L","Farben",5, 2,1, 26, 8,14.5),
+    A("a22","5044","Acryl-Dichtmasse weiß","Farben",5, 5,2, 44,15, 0.4),
+    A("a23","5081","Malerkrepp 30mm","Farben",5, 8,1, 66,20, 0.1),
+    A("a24","5127","Abdeckvlies 1x25m","Farben",5,11,3, 17, 6, 2.2),
+    A("a25","5163","Lackspray RAL9005 matt","Farben",5,14,2,  3, 6, 0.5),
+    A("a26","6019","Arbeitshandschuhe Gr. 9","Werkzeug",6, 3,1, 90,30, 0.1),
+    A("a27","6057","Cuttermesser 18mm Profi","Werkzeug",6, 7,2, 52,18, 0.2),
+    A("a28","6103","Werkzeugkoffer leer 20 Zoll","Werkzeug",6,12,1, 13, 5, 3.4)
+  ];
+  state.picker = [
+    { id:"p1", name:"Lena K.",   kuerzel:"LK", picks:187, fehler:2, status:"aktiv" },
+    { id:"p2", name:"Ahmed B.",  kuerzel:"AB", picks:203, fehler:1, status:"aktiv" },
+    { id:"p3", name:"Du (Demo)", kuerzel:"DU", picks:214, fehler:2, status:"aktiv" }
+  ];
+  state.touren = [
+    { id:"nord", name:"Tour Nord", abfahrt: inMin(35) },
+    { id:"sued", name:"Tour Süd",  abfahrt: inMin(120) }
+  ];
+  state.auftraege = [
+    O("A-2295","Baustoff Hartmann GmbH","express", 20,"nord",
+      [P("a01",2),P("a06",1),P("a16",4),P("a11",3),P("a21",2),P("a07",2)],"offen",null),
+    O("A-2296","Elektro Wienand","normal", 95,"sued",
+      [P("a08",5),P("a10",2),P("a09",1),P("a20",3)],"offen",null),
+    O("A-2297","Sanitärtechnik Roth","eilig", 55,"nord",
+      [P("a12",4),P("a13",2),P("a14",1),P("a11",5),P("a15",2)],"offen",null),
+    O("A-2298","Malermeister Öztürk","normal",110,"sued",
+      [P("a21",4),P("a22",6),P("a23",8),P("a24",2)],"offen",null),
+    O("A-2299","Hausmeisterservice Klein","normal",100,"sued",
+      [P("a04",1),P("a26",3),P("a27",2),P("a17",1),P("a05",1)],"offen",null),
+    O("A-2292","Tischlerei Brandt","eilig", 45,"nord",
+      [P("a16",6,"gepickt",6),P("a17",2,"gepickt",2),P("a18",3),P("a19",4),P("a02",1)],
+      "kommissionierung","p1",{ zeiten:{ start: vorMin(9), fertig:null } }),
+    O("A-2293","GaLaBau Petersen","normal", 90,"sued",
+      [P("a26",4,"gepickt",4),P("a20",2),P("a28",1)],
+      "kommissionierung","p2",{ zeiten:{ start: vorMin(5), fertig:null } }),
+    O("A-2290","Dachdeckerei Simon","eilig", 30,"nord",
+      [P("a03",2,"gepickt",2),P("a04",2,"gepickt",2),P("a16",2,"teilpick",1)],
+      "packplatz","p1",{ zeiten:{ start: vorMin(38), fertig: vorMin(22) } }),
+    O("A-2291","Fliesen Colak","normal", 80,"sued",
+      [P("a11",6,"gepickt",6),P("a22",3,"gepickt",3),P("a12",2,"gepickt",2)],
+      "packplatz","p2",{ zeiten:{ start: vorMin(50), fertig: vorMin(31) } }),
+    O("A-2288","Zimmerei Vogel","normal", 28,"nord",
+      [P("a02",1,"gepickt",1),P("a18",2,"gepickt",2)],
+      "gepackt","p2",{ packstueck:"Karton M", zeiten:{ start: vorMin(75), fertig: vorMin(60) } }),
+    O("A-2287","Bauhof Stadt Lünen","normal", 15,"nord",
+      [P("a21",6,"gepickt",6),P("a06",2,"gepickt",2)],
+      "verladen","p1",{ packstueck:"Palette", zeiten:{ start: vorMin(120), fertig: vorMin(95) } })
+  ];
+
+  loggen("Demo-Daten geladen: " + state.artikel.length + " Artikel, " + state.auftraege.length + " Aufträge, " +
+         state.picker.length + " Picker. Alles nur im Arbeitsspeicher.", "Demo");
+  loggen("Schichtbeginn – 3 Picker angemeldet", "System");
+  state.artikel.filter(a => a.bestand < a.mindestbestand).forEach(a =>
+    warnen("gelb","📦", a.name + " (" + a.artikelnummer + "): Bestand " + a.bestand +
+           " unter Mindestbestand " + a.mindestbestand));
+  kritischPruefen();
+}
+function warnen(art_, zeichen, text){
+  state.warnungen.unshift({ id:neueId("w"), art:art_, zeichen, text, zeit:Date.now(), quittiert:false });
+  loggen(zeichen + " " + text, "System");
+}
+
+/* ---------- Berechnungen ---------- */
+const AKTIV = ["offen","kommissionierung"];
+function fertigZahl(o){ return o.positionen.filter(p => p.status === "gepickt" || p.status === "teilpick").length; }
+function offenZahl(o){ return o.positionen.filter(p => p.status === "offen").length; }
+function hatTeilpick(o){ return o.positionen.some(p => p.status === "teilpick" || p.status === "problem"); }
+function genauigkeit(){ return state.scansGesamt ? state.scansOk / state.scansGesamt * 100 : 100; }
+function pickerGenau(p){ const g = p.picks + p.fehler; return g ? (p.picks / g * 100).toFixed(1) : "100.0"; }
+function picksProStunde(){
+  const h = (Date.now() - SCHICHTSTART) / STD;
+  return Math.round(state.picker.reduce((s,p) => s + p.picks, 0) / Math.max(.5, h));
+}
+function naechsteTour(){
+  return state.touren.filter(t => t.abfahrt > Date.now()).sort((a,b) => a.abfahrt - b.abfahrt)[0] || null;
+}
+/* Cut-off-Risiko: offene Positionen x Ø-Pickzeit + Versandpuffer > Restzeit */
+function istKritisch(o){
+  if (!AKTIV.includes(o.status)) return false;
+  const rest = o.cutoff - Date.now();
+  if (rest <= 0) return true;
+  return offenZahl(o) * state.einst.pickSek * 1000 + state.einst.pufferMin * MIN > rest;
+}
+function kritischPruefen(){
+  let geaendert = false;
+  state.auftraege.forEach(o => {
+    const k = istKritisch(o);
+    if (k && !state.kritisch.has(o.id)){
+      state.kritisch.add(o.id); geaendert = true;
+      warnen("rot","⏱", o.id + " (" + o.kunde + ") droht den Cut-off " + hhmm(o.cutoff) + " zu reißen");
+    } else if (!k && state.kritisch.has(o.id)){
+      state.kritisch.delete(o.id); geaendert = true;
+    }
+  });
+  return geaendert;
+}
+/* Laufoptimierte Route: Gang aufsteigend, Schlangenlinie durch die Regale */
+function routeSort(idx, o){
+  return idx.slice().sort((i,j) => {
+    const A1 = art(o.positionen[i].artikelId).lagerplatz, B1 = art(o.positionen[j].artikelId).lagerplatz;
+    if (A1.gang !== B1.gang) return A1.gang - B1.gang;
+    const richtung = (state.einst.route === "schlange" && A1.gang % 2 === 0) ? -1 : 1;
+    if (A1.regal !== B1.regal) return (A1.regal - B1.regal) * richtung;
+    return A1.boden - B1.boden;
+  });
+}
+function cutChip(o){
+  const k = state.kritisch.has(o.id);
+  return '<span class="chip ohne mono ' + (k ? "warn" : "info") + '">Cut-off ' + hhmm(o.cutoff) +
+    ' · <span data-cut="' + o.cutoff + '">' + restText(o.cutoff - Date.now()) + '</span></span>';
+}
+function prioChip(o){
+  if (o.prio === "express") return '<span class="chip warn">Express</span>';
+  if (o.prio === "eilig")   return '<span class="chip arbeit">Eilig</span>';
+  return '<span class="chip info">Normal</span>';
+}
+
+/* ============================================================
+   ANSICHT 1 · LEITSTAND
+   ============================================================ */
+const SPALTEN = [
+  { titel:"Offen",              passt: o => o.status === "offen" },
+  { titel:"In Kommissionierung",passt: o => o.status === "kommissionierung" || o.status === "packplatz" },
+  { titel:"Gepackt",            passt: o => o.status === "gepackt" },
+  { titel:"Verladen",           passt: o => o.status === "verladen" }
+];
+function kpi(label, wert, unter, klasse){
+  return '<div class="kpi ' + (klasse || "") + '"><div class="label">' + label + '</div>' +
+    '<div class="wert">' + wert + '</div><div class="unter">' + unter + '</div></div>';
+}
+function ansichtLeitstand(){
+  const nt = state.touren.length ? naechsteTour() : null;
+  const gesamt = state.auftraege.length;
+  const erledigt = state.auftraege.filter(o => ["gepackt","verladen"].includes(o.status)).length;
+  const gen = genauigkeit();
+  const offeneW = state.warnungen.filter(w => !w.quittiert);
+
+  const kpis = '<div class="kpis">' +
+    kpi("Aufträge heute", erledigt + " / " + gesamt, "erledigt / gesamt") +
+    kpi("Pick-Genauigkeit", gen.toFixed(1) + " <small>%</small>", state.scansOk + " von " + state.scansGesamt + " Scans korrekt",
+        gen >= state.einst.zielGenauigkeit ? "gut" : (gen < state.einst.zielGenauigkeit - 2 ? "warnung" : "")) +
+    kpi("Ø Picks / Stunde", picksProStunde(), "über alle Picker") +
+    (nt ? kpi("Nächste Abfahrt", '<span data-cut="' + nt.abfahrt + '">' + restText(nt.abfahrt - Date.now()) + "</span>",
+              nt.name + " · " + hhmm(nt.abfahrt) + " Uhr",
+              (nt.abfahrt - Date.now() < state.einst.abfahrtWarnMin * MIN) ? "warnung" : "")
+        : kpi("Nächste Abfahrt", "–", "alle Touren unterwegs")) +
+    "</div>";
+
+  const board = '<div class="board">' + SPALTEN.map(s => {
+    const liste = state.auftraege.filter(s.passt).sort((a,b) => a.cutoff - b.cutoff);
+    return '<div class="board-spalte"><div class="board-kopf"><h3>' + s.titel + '</h3>' +
+      '<span class="zaehler">' + liste.length + "</span></div>" +
+      (liste.length ? liste.map(auftragKarte).join("")
+        : '<div class="leer"><b>Nichts offen</b>Alles erledigt.</div>') + "</div>";
+  }).join("") + "</div>";
+
+  const pickerListe = state.picker.map(p => {
+    const laeuft = state.auftraege.find(o => o.picker === p.id && o.status === "kommissionierung");
+    const chip = p.status === "problem" ? '<span class="chip warn">Problem</span>'
+               : p.status === "pause"   ? '<span class="chip arbeit">Pause</span>'
+               : '<span class="chip fertig">aktiv</span>';
+    return '<div class="zeile"><span class="avatar">' + esc(p.kuerzel) + "</span>" +
+      '<span class="name">' + esc(p.name) +
+      '<span class="meta" style="display:block;font-weight:400">' +
+      (laeuft ? "arbeitet an " + laeuft.id : "kein aktiver Auftrag") + " · " + p.picks + " Picks · " + pickerGenau(p) + " %</span></span>" +
+      chip + "</div>";
+  }).join("");
+
+  const warnHtml = offeneW.length ? offeneW.map(w =>
+    '<div class="warnung-zeile ' + w.art + '"><span>' + w.zeichen + "</span>" +
+    '<span class="wz-text">' + esc(w.text) + '<span class="wz-zeit">' + hhmm(w.zeit) + "</span></span>" +
+    '<button onclick="warnungQuittieren(\'' + w.id + '\')">OK</button></div>').join("")
+    : '<div class="leer"><b>Keine offenen Warnungen</b>Alles im grünen Bereich.</div>';
+
+  return '<div class="abschnitt"><div><span class="eyebrow">Ansicht 1 · Monitor im Büro</span>' +
+    '<h2><span class="live-punkt"></span>Leitstand</h2></div>' +
+    '<span class="hinweis">Alle Aufträge von „Offen“ bis „Verladen“ – jede Änderung ist sofort überall sichtbar</span></div>' +
+    kpis +
+    '<div class="zwei-spalten"><div>' + board + "</div><div>" +
+      '<div class="karte still" style="margin-bottom:16px"><div class="karte-kopf"><h3>Picker</h3>' +
+      '<span class="zaehler">' + state.picker.length + "</span></div>" + pickerListe + "</div>" +
+      '<div class="karte still" style="margin-bottom:16px"><div class="karte-kopf"><h3>Warnungen</h3>' +
+      '<span class="zaehler">' + offeneW.length + "</span></div>" + warnHtml + "</div>" +
+      logKarte() +
+    "</div></div>";
+}
+function auftragKarte(o){
+  const fertig = fertigZahl(o), gesamt = o.positionen.length;
+  const krit = state.kritisch.has(o.id);
+  const p = o.picker ? pk(o.picker) : null;
+  let aktionen = "";
+  if (o.status === "offen"){
+    aktionen = '<div class="auftrag-fuss">' +
+      '<select onchange="zuweisen(\'' + o.id + '\', this.value)"><option value="">Frei zur Abholung</option>' +
+      state.picker.map(x => '<option value="' + x.id + '"' + (o.picker === x.id ? " selected" : "") + ">" + esc(x.name) + "</option>").join("") +
+      "</select>" +
+      '<select onchange="prioSetzen(\'' + o.id + '\', this.value)">' +
+      ["normal","eilig","express"].map(v => '<option value="' + v + '"' + (o.prio === v ? " selected" : "") + ">" + PRIO_TEXT[v] + "</option>").join("") +
+      "</select></div>";
+  }
+  return '<div class="auftrag p-' + o.prio + (krit ? " kritisch" : "") + '" data-puls="' + o.id + '">' +
+    '<div class="auftrag-kopf"><span class="auftrag-nr">' + o.id + "</span>" + prioChip(o) + "</div>" +
+    '<div class="auftrag-kunde">' + esc(o.kunde) + "</div>" +
+    '<div class="fortschritt-zeile"><div class="fortschritt' + (fertig === gesamt ? " fertig" : "") + '">' +
+    '<i style="width:' + Math.round(fertig / gesamt * 100) + '%"></i></div>' +
+    '<span class="mono">' + fertig + "/" + gesamt + "</span></div>" +
+    '<div class="auftrag-meta">' + cutChip(o) +
+      '<span class="chip ohne info mono">' + esc(tour(o.tour) ? tour(o.tour).name : "–") + "</span>" +
+      (p ? '<span class="chip fertig">' + esc(p.name) + "</span>"
+         : (o.status === "offen" ? '<span class="chip arbeit">frei</span>' : "")) +
+      (o.status === "packplatz" ? '<span class="chip arbeit">am Packplatz</span>' : "") +
+      (hatTeilpick(o) ? '<span class="chip arbeit">Teilpick</span>' : "") +
+    "</div>" + aktionen + "</div>";
+}
+function zuweisen(id, pickerId){
+  const o = auftrag(id); if (!o) return;
+  o.picker = pickerId || null; puls(id);
+  loggen(pickerId ? o.id + " an " + pk(pickerId).name + " zugewiesen" : o.id + " steht wieder frei zur Abholung", "Leitstand");
+  rendern();
+}
+function prioSetzen(id, prio){
+  const o = auftrag(id); if (!o) return;
+  o.prio = prio; puls(id);
+  loggen("Priorität " + o.id + " auf „" + PRIO_TEXT[prio] + "“ geändert", "Leitstand");
+  rendern();
+}
+function warnungQuittieren(id){
+  const w = state.warnungen.find(x => x.id === id);
+  if (w){ w.quittiert = true; loggen("Warnung quittiert: " + w.text.slice(0, 50), "Leitstand"); }
+  rendern();
+}
+
+/* ============================================================
+   ANSICHT 2 · PICKER (Handscanner)
+   ============================================================ */
+function meineAuftraege(){
+  const rang = { express:0, eilig:1, normal:2 };
+  return state.auftraege
+    .filter(o => o.status === "offen" && (!o.picker || o.picker === state.aktiverPicker))
+    .sort((a,b) => rang[a.prio] - rang[b.prio] || a.cutoff - b.cutoff);
+}
+function ansichtPicker(){
+  const ich = pk(state.aktiverPicker) || state.picker[0];
+  if (!ich) return '<div class="leer"><b>Kein Picker angelegt</b>Unter „Stammdaten → Personal“ jemanden anlegen.</div>';
+  state.aktiverPicker = ich.id;
+  const s = state.session;
+  let inhalt = "";
+
+  if (!s){
+    const liste = meineAuftraege();
+    inhalt = '<div class="karte-kopf"><h3>Auftrag holen</h3><span class="zaehler">' + liste.length + "</span></div>" +
+      (liste.length ? liste.map(o =>
+        '<button class="auftrag-taste" data-puls="' + o.id + '" onclick="auftragNehmen(\'' + o.id + '\')">' +
+        '<span class="at-kopf"><span class="at-nr">' + o.id + "</span>" + prioChip(o) + "</span>" +
+        '<div class="at-sub">' + esc(o.kunde) + " · " + o.positionen.length + " Positionen · " + esc(tour(o.tour) ? tour(o.tour).name : "–") + "</div>" +
+        '<div class="at-cut' + (state.kritisch.has(o.id) ? " knapp" : "") + '">Cut-off ' + hhmm(o.cutoff) +
+        ' · noch <span data-cut="' + o.cutoff + '">' + restText(o.cutoff - Date.now()) + "</span>" +
+        (o.picker === state.aktiverPicker ? " · dir zugewiesen" : "") + "</div></button>").join("")
+        : '<div class="leer"><b>Keine offenen Aufträge</b>Gut gemacht – alles abgearbeitet.</div>');
+  } else {
+    const o = auftrag(s.auftragId);
+    if (s.schritt === "ende"){
+      const teil = o.positionen.filter(p => p.status === "teilpick").length;
+      const prob = o.positionen.filter(p => p.status === "problem").length;
+      const dauer = Math.max(1, Math.round((Date.now() - s.start) / MIN));
+      inhalt = '<div class="karte still" style="text-align:center">' +
+        "<h2>" + o.id + " fertig kommissioniert</h2>" +
+        '<div class="kpis" style="margin:16px 0">' +
+        kpi("Positionen", o.positionen.length, "gesamt") +
+        kpi("Teil / Problem", teil + prob, "auffällig", (teil + prob) ? "warnung" : "gut") +
+        kpi("Dauer", dauer + " <small>Min</small>", "seit Start") + "</div>" +
+        '<button class="btn primaer gross" onclick="uebergeben()">An Packplatz übergeben</button></div>';
+    } else {
+      const pos = o.positionen[s.warteschlange[0]];
+      const a = art(pos.artikelId);
+      const fertig = fertigZahl(o), gesamt = o.positionen.length;
+      const kopf = '<div class="karte still" style="margin-bottom:14px">' +
+        '<div class="spur-kopf"><span class="mono">' + o.id + " · " + esc(o.kunde) + "</span>" +
+        '<span class="mono">' + fertig + " / " + gesamt + " Positionen</span></div>" +
+        '<div class="fortschritt"><i style="width:' + Math.round(fertig / gesamt * 100) + '%"></i></div></div>';
+
+      if (s.falschScan){
+        inhalt = kopf + '<div class="stopp"><h3>Stopp – falscher Artikel</h3>' +
+          '<div class="codes">Erwartet: <b>' + a.artikelnummer + "</b><br>Gescannt: <b>" + esc(s.falschScan) + "</b></div>" +
+          '<p class="fliess">Artikel zurücklegen und den richtigen greifen.</p>' +
+          '<button class="btn primaer gross" style="margin-top:12px" onclick="falschSchliessen()">Zurück zum Pick</button></div>';
+      } else if (s.schritt === "scan"){
+        inhalt = kopf +
+          (pos.einmalGemeldet ? '<div class="demo-hinweis" style="margin-bottom:12px">Zurückgestellte Position – erneut versuchen oder endgültig als Problem melden.</div>' : "") +
+          '<div class="karte still"><div class="eyebrow">Gehe zu Lagerplatz</div>' +
+          '<div class="platz-rahmen"><i></i><div class="platz-code">' + platzCode(a.lagerplatz) + "</div>" +
+          '<div class="platz-sub"><span class="chip ohne info mono">Gang ' + a.lagerplatz.gang + "</span>" +
+          '<span class="chip ohne info mono">Regal ' + a.lagerplatz.regal + "</span>" +
+          '<span class="chip ohne info mono">Boden ' + a.lagerplatz.boden + "</span></div></div>" +
+          '<div class="artikel-karte"><div class="artikel-zeichen">' + katZeichen(a.kategorie) + "</div>" +
+          '<div class="artikel-name">' + esc(a.name) + "</div>" +
+          '<div class="artikel-nr">Art.-Nr. ' + a.artikelnummer + " · " + esc(a.kategorie) + "</div>" +
+          '<div class="artikel-menge">× ' + pos.soll + " <small>Stück</small></div></div>" +
+          '<input id="scanFeld" class="scan-feld mono" inputmode="numeric" autocomplete="off" placeholder="Barcode scannen …" ' +
+          'onkeydown="if(event.key===\'Enter\'){scannen(this.value)}">' +
+          (state.einst.scanKnopf
+            ? '<button class="btn primaer gross" style="margin-top:10px" onclick="scannen(\'' + a.artikelnummer + '\')">Scan simulieren</button>' : "") +
+          '<button class="btn gefahr gross" style="margin-top:8px" onclick="problemOeffnen()">Problem melden</button></div>';
+      } else {
+        const knapp = a.bestand < pos.soll;
+        inhalt = kopf + '<div class="karte still"><div class="eyebrow">Menge bestätigen</div>' +
+          '<div class="artikel-karte"><div class="artikel-zeichen">' + katZeichen(a.kategorie) + "</div>" +
+          '<div class="artikel-name">' + esc(a.name) + "</div>" +
+          '<div class="artikel-nr">Artikel korrekt gescannt · ' + platzCode(a.lagerplatz) + "</div></div>" +
+          (knapp ? '<div class="demo-hinweis" style="margin-bottom:10px">Nur noch ' + a.bestand + " am Lagerplatz – Teilmenge möglich.</div>" : "") +
+          '<div class="stepper"><button onclick="mengeSchritt(-1)">−</button>' +
+          '<span class="wert">' + state.menge + "</span>" +
+          '<button onclick="mengeSchritt(1)">+</button></div>' +
+          '<p class="hinweis" style="text-align:center">Soll: <b class="mono">' + pos.soll + "</b>" +
+          (state.menge < pos.soll ? " · wird als <b>Teilpick</b> gebucht" : "") + "</p>" +
+          '<button class="btn primaer gross" style="margin-top:12px" onclick="mengeBestaetigen()">Menge bestätigen</button>' +
+          '<button class="btn gefahr gross" style="margin-top:8px" onclick="problemOeffnen()">Problem melden</button></div>';
+      }
+    }
+  }
+
+  const wahl = state.picker.map(p =>
+    '<button class="untertab' + (p.id === state.aktiverPicker ? " aktiv" : "") + '" onclick="pickerWechseln(\'' + p.id + '\')">' +
+    esc(p.name) + "</button>").join("");
+
+  return '<div class="abschnitt"><div><span class="eyebrow">Ansicht 2 · Handscanner im Gang</span><h2>Picker</h2></div>' +
+    '<span class="hinweis">Geführte Route, Scan-Kontrolle, Mengenbestätigung</span></div>' +
+    '<div class="geraet">' +
+    '<div class="untertabs">' + wahl + "</div>" +
+    '<div class="geraet-kopf"><span class="avatar">' + esc(ich.kuerzel) + "</span>" +
+    "<div><b>" + esc(ich.name) + '</b><div class="hinweis mono">Heute ' + ich.picks + " Picks · " + pickerGenau(ich) + " % genau</div></div>" +
+    '<span class="chip fertig" style="margin-left:auto">aktiv</span></div>' +
+    inhalt + "</div>";
+}
+function pickerWechseln(id){
+  if (state.session){ modalInfo("Läuft noch", "Erst den laufenden Pick-Vorgang beenden oder übergeben."); return; }
+  state.aktiverPicker = id; rendern();
+}
+function auftragNehmen(id){
+  const o = auftrag(id);
+  o.picker = state.aktiverPicker; o.status = "kommissionierung"; o.zeiten.start = Date.now();
+  const idx = routeSort(o.positionen.map((p,i) => p.status === "offen" ? i : -1).filter(i => i >= 0), o);
+  state.session = { auftragId:id, warteschlange:idx, schritt:"scan", start:Date.now(), falschScan:null };
+  loggen(pk(state.aktiverPicker).name + " hat " + o.id + " übernommen", "Picker");
+  puls(id); rendern();
+}
+function scannen(wert){
+  const s = state.session; if (!s || s.schritt !== "scan") return;
+  const o = auftrag(s.auftragId), pos = o.positionen[s.warteschlange[0]], a = art(pos.artikelId);
+  const v = String(wert || "").trim();
+  if (!v) return;
+  state.scansGesamt++;
+  if (v === a.artikelnummer){
+    state.scansOk++;
+    s.schritt = "menge";
+    state.menge = Math.max(0, Math.min(pos.soll, a.bestand));
+  } else {
+    pk(state.aktiverPicker).fehler++;
+    s.falschScan = v;
+    loggen("Fehlscan bei " + o.id + ": erwartet " + a.artikelnummer + ", gescannt " + v, "Picker");
+  }
+  rendern();
+}
+function falschSchliessen(){ state.session.falschScan = null; rendern(); }
+function mengeSchritt(d){
+  const s = state.session, pos = auftrag(s.auftragId).positionen[s.warteschlange[0]];
+  const max = state.einst.ueberpicken ? 999 : pos.soll;
+  state.menge = Math.min(max, Math.max(0, state.menge + d));
+  rendern();
+}
+function mengeBestaetigen(){
+  const s = state.session, o = auftrag(s.auftragId);
+  const pos = o.positionen[s.warteschlange[0]], a = art(pos.artikelId);
+  pos.ist = state.menge;
+  pos.status = state.menge < pos.soll ? "teilpick" : "gepickt";
+  const vorher = a.bestand;
+  a.bestand = Math.max(0, a.bestand - state.menge);
+  if (vorher >= a.mindestbestand && a.bestand < a.mindestbestand)
+    warnen("gelb","📦", a.name + " (" + a.artikelnummer + "): Bestand " + a.bestand + " unter Mindestbestand " + a.mindestbestand);
+  pk(state.aktiverPicker).picks++;
+  if (pos.status === "teilpick")
+    loggen("Teilpick bei " + o.id + ": " + a.name + " " + state.menge + "/" + pos.soll, "Picker");
+  s.warteschlange.shift();
+  s.schritt = s.warteschlange.length ? "scan" : "ende";
+  puls(o.id); rendern();
+}
+function problemOeffnen(){
+  modalOeffnen("<h2>Problem melden</h2>" +
+    '<p class="fliess">Die Position wird zunächst ans Ende der Route gestellt. Beim zweiten Mal gilt sie endgültig als Problem (Menge 0). Der Leitstand wird sofort informiert.</p>' +
+    ["Lagerplatz leer","Ware beschädigt","Artikel nicht auffindbar"].map(t =>
+      '<button class="btn gross" style="margin-bottom:8px" onclick="problemMelden(\'' + t + '\')">' + t + "</button>").join("") +
+    '<div class="modal-fuss"><button class="btn" onclick="modalSchliessen()">Abbrechen</button></div>');
+}
+function problemMelden(typ){
+  modalSchliessen();
+  const s = state.session, o = auftrag(s.auftragId);
+  const i = s.warteschlange[0], pos = o.positionen[i], a = art(pos.artikelId);
+  warnen("rot","⚠", platzCode(a.lagerplatz) + ": " + typ + " (" + a.name + ", " + o.id + ")");
+  if (!pos.einmalGemeldet){
+    pos.einmalGemeldet = true;
+    s.warteschlange.shift(); s.warteschlange.push(i);
+  } else {
+    pos.status = "problem"; pos.ist = 0;
+    s.warteschlange.shift();
+  }
+  s.schritt = s.warteschlange.length ? "scan" : "ende";
+  puls(o.id); rendern();
+}
+function uebergeben(){
+  const s = state.session, o = auftrag(s.auftragId);
+  o.status = "packplatz"; o.zeiten.fertig = Date.now();
+  loggen(o.id + " an den Packplatz übergeben", pk(state.aktiverPicker).name);
+  state.session = null; puls(o.id); rendern();
+}
+
+/* ============================================================
+   ANSICHT 3 · PACKPLATZ
+   ============================================================ */
+function ansichtPackplatz(){
+  const schlange = state.auftraege.filter(o => o.status === "packplatz").sort((a,b) => a.cutoff - b.cutoff);
+  const packen = schlange.length ? schlange.map(o => {
+    const alleGehakt = !state.einst.kontrolle || o.positionen.every(p => p.kontrolle || p.status === "problem");
+    const bereit = alleGehakt && o.packstueck;
+    return '<div class="karte" data-puls="' + o.id + '" style="margin-bottom:14px">' +
+      '<div class="karte-kopf"><h3 class="mono">' + o.id + "</h3>" + prioChip(o) + cutChip(o) + "</div>" +
+      '<p class="hinweis" style="margin-bottom:10px">' + esc(o.kunde) + " · " + esc(tour(o.tour) ? tour(o.tour).name : "–") +
+      (o.picker ? " · gepickt von " + esc(pk(o.picker).name) : "") + "</p>" +
+      o.positionen.map((p,i) => {
+        const a = art(p.artikelId);
+        if (p.status === "problem")
+          return '<div class="check-zeile" style="opacity:.6"><div class="box">–</div>' +
+            '<span class="cz-name">' + esc(a.name) + '</span><span class="chip warn">Problem – fehlt</span></div>';
+        return '<div class="check-zeile' + (p.kontrolle ? " an" : "") + '" onclick="posHaken(\'' + o.id + "'," + i + ')">' +
+          '<div class="box">' + (p.kontrolle ? "✓" : "") + "</div>" +
+          '<span class="cz-name">' + esc(a.name) + ' <span class="mono hinweis">' + a.artikelnummer + "</span></span>" +
+          (p.status === "teilpick" ? '<span class="chip arbeit">Teilpick</span>' : "") +
+          '<span class="cz-menge">× ' + p.ist + "</span></div>";
+      }).join("") +
+      '<div class="pack-wahl">' + state.einst.packstuecke.map(ps =>
+        '<button class="untertab' + (o.packstueck === ps ? " aktiv" : "") + '" onclick="packstueckSetzen(\'' + o.id + "','" + esc(ps) + '\')">' + esc(ps) + "</button>").join("") + "</div>" +
+      '<button class="btn primaer gross"' + (bereit ? "" : " disabled") + ' onclick="verpacken(\'' + o.id + '\')">Verpackt</button>' +
+      (bereit ? "" : '<p class="hinweis" style="text-align:center;margin-top:7px">Erst alle Positionen abhaken und ein Packstück wählen</p>') +
+      "</div>";
+  }).join("") : '<div class="leer"><b>Warteschlange leer</b>Nichts zu packen – alles erledigt.</div>';
+
+  const verladung = state.touren.map(t => {
+    const inTour = state.auftraege.filter(o => o.tour === t.id);
+    const gepackt = inTour.filter(o => o.status === "gepackt").sort((a,b) => a.cutoff - b.cutoff);
+    const verladen = inTour.filter(o => o.status === "verladen").length;
+    const komplett = inTour.length > 0 && inTour.every(o => o.status === "verladen");
+    let zeilen;
+    if (komplett) zeilen = '<div class="tour-fertig">' + esc(t.name) + " komplett – " + inTour.length + "/" + inTour.length + " Aufträge verladen</div>";
+    else if (gepackt.length) zeilen = gepackt.map(o =>
+      '<div class="lade-zeile" data-puls="' + o.id + '"><div class="lz-info"><div class="lz-nr">' + o.id + "</div>" +
+      '<div class="lz-sub">' + esc(o.kunde) + " · " + esc(o.packstueck || "–") + " · Cut-off " + hhmm(o.cutoff) + "</div></div>" +
+      '<button class="btn gruen" onclick="verladen(\'' + o.id + '\')">Auf LKW verladen</button></div>').join("");
+    else zeilen = '<div class="leer">Noch nichts Gepacktes für diese Tour.</div>';
+    return '<div class="tour-gruppe"><div class="tour-kopf"><span class="tk-name">' + esc(t.name) +
+      " · Abfahrt " + hhmm(t.abfahrt) + '</span><span class="hinweis mono">noch <span data-cut="' + t.abfahrt + '">' +
+      restText(t.abfahrt - Date.now()) + "</span> · " + verladen + "/" + inTour.length + " verladen</span></div>" + zeilen + "</div>";
+  }).join("");
+
+  return '<div class="abschnitt"><div><span class="eyebrow">Ansicht 3 · Tablet am Packtisch</span><h2>Packplatz &amp; Verladung</h2></div>' +
+    '<span class="hinweis">Kontrollieren, verpacken, nach Tour auf den LKW buchen</span></div>' +
+    '<div class="pack-raster"><div><div class="abschnitt"><h3>Packen · Warteschlange (' + schlange.length + ")</h3></div>" + packen + "</div>" +
+    '<div><div class="abschnitt"><h3>Verladung nach Tour</h3></div>' + verladung + "</div></div>";
+}
+function posHaken(id, i){ const p = auftrag(id).positionen[i]; p.kontrolle = !p.kontrolle; rendern(); }
+function packstueckSetzen(id, ps){ auftrag(id).packstueck = ps; rendern(); }
+function verpacken(id){
+  const o = auftrag(id); o.status = "gepackt"; puls(id);
+  loggen(o.id + " verpackt (" + o.packstueck + ")", "Packplatz");
+  rendern();
+}
+function verladen(id){
+  const o = auftrag(id); o.status = "verladen"; puls(id);
+  loggen(o.id + " auf LKW verladen (" + tour(o.tour).name + ")", "Packplatz");
+  rendern();
+}
+
+/* ============================================================
+   ANSICHT 4 · STAMMDATEN
+   ============================================================ */
+const STAMM_TABS = [["artikel","Artikel"],["auftraege","Aufträge"],["personal","Personal"],["touren","Touren"]];
+function stammTab(t){ state.stammTab = t; rendern(); }
+function ansichtStammdaten(){
+  const tabs = '<div class="untertabs">' + STAMM_TABS.map(([k,l]) =>
+    '<button class="untertab' + (state.stammTab === k ? " aktiv" : "") + '" onclick="stammTab(\'' + k + '\')">' + l + "</button>").join("") + "</div>";
+  let inhalt = "";
+  if (state.stammTab === "artikel")   inhalt = stammArtikel();
+  if (state.stammTab === "auftraege") inhalt = stammAuftraege();
+  if (state.stammTab === "personal")  inhalt = stammPersonal();
+  if (state.stammTab === "touren")    inhalt = stammTouren();
+  return '<div class="abschnitt"><div><span class="eyebrow">Ansicht 4 · Büro-PC</span><h2>Stammdaten</h2></div>' +
+    '<span class="hinweis">Artikel, Aufträge, Personal und Touren – Änderungen wirken sofort in allen Ansichten</span></div>' +
+    tabs + inhalt;
+}
+function inVerwendung(artId){ return state.auftraege.some(o => o.positionen.some(p => p.artikelId === artId)); }
+
+function stammArtikel(){
+  const liste = state.artikel.slice().sort((a,b) => a.name.localeCompare(b.name)).map(a => {
+    const wenig = a.bestand < a.mindestbestand;
+    const benutzt = inVerwendung(a.id);
+    return '<div class="karte still" style="margin-bottom:10px" data-suche="' + esc((a.name + " " + a.artikelnummer + " " + a.kategorie).toLowerCase()) + '">' +
+      '<div class="karte-kopf"><span class="artikel-zeichen" style="width:44px;height:44px;font-size:22px;border-radius:13px;margin:0">' + katZeichen(a.kategorie) + "</span>" +
+      "<h3>" + esc(a.name) + '<span class="hinweis" style="display:block;font-weight:400">Art.-Nr. <span class="mono">' + a.artikelnummer + "</span> · " + esc(a.kategorie) + "</span></h3>" +
+      (wenig ? '<span class="chip arbeit">Bestand niedrig</span>' : "") + "</div>" +
+      '<div class="auftrag-meta"><span class="chip ohne info mono">' + platzCode(a.lagerplatz) + "</span>" +
+      '<span class="chip ohne info mono">min. ' + a.mindestbestand + "</span>" +
+      '<span class="chip ohne info mono">' + a.gewicht + " kg</span></div>" +
+      '<div class="aktionen" style="margin-top:12px;align-items:center">' +
+      '<span class="bestand-stepper"><button onclick="bestandAendern(\'' + a.id + '\',-1)">−</button>' +
+      '<b class="' + (wenig ? "wenig" : "") + '">' + a.bestand + "</b>" +
+      '<button onclick="bestandAendern(\'' + a.id + '\',1)">+</button></span>' +
+      '<button class="btn klein" onclick="artikelModal(\'' + a.id + '\')">Bearbeiten</button>' +
+      '<button class="btn klein gefahr"' + (benutzt ? " disabled title=\"steckt in Aufträgen\"" : "") +
+      ' onclick="artikelLoeschen(\'' + a.id + '\')">Löschen</button></div></div>';
+  }).join("");
+  return '<div class="demo-hinweis" style="margin-bottom:12px"><b>Artikel-Stammdaten.</b> Bestand direkt mit − / + korrigieren. ' +
+    "Artikel, die in Aufträgen stecken, können nicht gelöscht werden.</div>" +
+    '<div class="aktionen" style="margin-bottom:12px;align-items:center">' +
+    '<button class="btn primaer" onclick="artikelModal(null)">Neuer Artikel</button>' +
+    '<span class="hinweis">' + state.artikel.length + " Artikel</span></div>" +
+    '<div class="feld"><input placeholder="Artikel suchen (Name, Nummer, Kategorie) …" oninput="artikelFiltern(this.value)"></div>' +
+    '<div id="artListe">' + liste + "</div>";
+}
+function artikelFiltern(q){
+  q = String(q || "").trim().toLowerCase();
+  $$("[data-suche]").forEach(el => {
+    el.style.display = !q || el.getAttribute("data-suche").includes(q) ? "" : "none";
+  });
+}
+function bestandAendern(id, d){
+  const a = art(id), vorher = a.bestand;
+  a.bestand = Math.max(0, a.bestand + d);
+  if (vorher >= a.mindestbestand && a.bestand < a.mindestbestand)
+    warnen("gelb","📦", a.name + " (" + a.artikelnummer + "): Bestand " + a.bestand + " unter Mindestbestand " + a.mindestbestand);
+  loggen("Bestandskorrektur " + a.name + ": " + vorher + " → " + a.bestand, "Stammdaten");
+  rendern();
+}
+function artikelModal(id){
+  const a = id ? art(id) : null;
+  const kats = state.einst.kategorien.map(k =>
+    "<option" + (a && a.kategorie === k.name ? " selected" : "") + ">" + esc(k.name) + "</option>").join("");
+  const f = (l,i,t,v) => '<div class="feld"><label>' + l + "</label><input id=\"" + i + '" type="' + t + '" value="' + esc(v) + '"' + (t === "number" ? ' min="0"' : "") + "></div>";
+  modalOeffnen("<h2>" + (a ? "Artikel bearbeiten" : "Neuer Artikel") + "</h2>" +
+    '<p class="fliess">Änderungen wirken sofort in allen Ansichten.</p>' +
+    '<div class="fehler" id="artFehler"></div>' +
+    f("Artikelname","f_name","text", a ? a.name : "") +
+    '<div class="feld-2">' + f("Artikelnummer (4-stellig)","f_nr","text", a ? a.artikelnummer : "") +
+    '<div class="feld"><label>Kategorie</label><select id="f_kat">' + kats + "</select></div></div>" +
+    '<div class="feld-2">' + f("Gang","f_gang","number", a ? a.lagerplatz.gang : 1) + f("Regal","f_regal","number", a ? a.lagerplatz.regal : 1) + "</div>" +
+    '<div class="feld-2">' + f("Boden","f_boden","number", a ? a.lagerplatz.boden : 1) + f("Gewicht (kg)","f_gew","number", a ? a.gewicht : 1) + "</div>" +
+    '<div class="feld-2">' + f("Bestand","f_best","number", a ? a.bestand : 0) + f("Mindestbestand","f_mind","number", a ? a.mindestbestand : 5) + "</div>" +
+    '<div class="modal-fuss"><button class="btn" onclick="modalSchliessen()">Abbrechen</button>' +
+    '<button class="btn primaer" onclick="artikelSpeichern(' + (id ? "'" + id + "'" : "null") + ')">Speichern</button></div>');
+}
+function artikelSpeichern(id){
+  const fehler = $("#artFehler");
+  const nr = feldWert("f_nr");
+  if (!/^\d{4}$/.test(nr)){ fehler.textContent = "Die Artikelnummer muss genau 4 Ziffern haben."; return; }
+  const doppelt = state.artikel.find(a => a.artikelnummer === nr && a.id !== id);
+  if (doppelt){ fehler.textContent = "Artikelnummer " + nr + " ist schon vergeben (" + doppelt.name + ")."; return; }
+  if (!feldWert("f_name")){ fehler.textContent = "Bitte einen Artikelnamen eingeben."; return; }
+  let a = id ? art(id) : null;
+  if (!a){ a = A(neueId("a"), nr, "", "", 1,1,1, 0,0,0); state.artikel.push(a); }
+  a.artikelnummer = nr;
+  a.name = feldWert("f_name");
+  a.kategorie = $("#f_kat").value;
+  a.lagerplatz = { gang: feldZahl("f_gang",1), regal: feldZahl("f_regal",1), boden: feldZahl("f_boden",1) };
+  a.gewicht = feldZahl("f_gew",0);
+  a.mindestbestand = feldZahl("f_mind",0);
+  a.bestand = feldZahl("f_best",0);
+  loggen((id ? "Artikel geändert: " : "Neuer Artikel: ") + a.name + " (" + a.artikelnummer + ")", "Stammdaten");
+  modalSchliessen(); rendern();
+}
+function artikelLoeschen(id){
+  const a = art(id);
+  if (inVerwendung(id)) return;
+  modalFrage("Artikel löschen?", "Artikel <b>" + esc(a.name) + "</b> (" + a.artikelnummer + ") endgültig entfernen?", () => {
+    state.artikel = state.artikel.filter(x => x.id !== id);
+    loggen("Artikel gelöscht: " + a.name, "Stammdaten");
+    rendern();
+  }, "Ja, löschen");
+}
+
+const STATUS_TEXT = { offen:"Offen", kommissionierung:"In Kommissionierung", packplatz:"Am Packplatz",
+                      gepackt:"Gepackt", verladen:"Verladen" };
+function stammAuftraege(){
+  const liste = state.auftraege.slice().sort((a,b) => a.cutoff - b.cutoff).map(o => {
+    const aenderbar = o.status === "offen";
+    return '<div class="karte still" style="margin-bottom:10px"><div class="karte-kopf">' +
+      '<h3><span class="mono">' + o.id + "</span> · " + esc(o.kunde) +
+      '<span class="hinweis" style="display:block;font-weight:400">' + o.positionen.length + " Positionen · " + PRIO_TEXT[o.prio] + "</span></h3>" +
+      '<span class="chip ' + (o.status === "verladen" || o.status === "gepackt" ? "fertig" : o.status === "offen" ? "info" : "arbeit") + '">' +
+      STATUS_TEXT[o.status] + "</span></div>" +
+      '<div class="auftrag-meta">' + cutChip(o) +
+      '<span class="chip ohne info">' + esc(tour(o.tour) ? tour(o.tour).name : "–") + "</span>" +
+      (o.picker ? '<span class="chip fertig">' + esc(pk(o.picker).name) + "</span>" : "") + "</div>" +
+      '<div class="aktionen" style="margin-top:12px">' +
+      '<button class="btn klein"' + (aenderbar ? "" : " disabled") + ' onclick="auftragModal(\'' + o.id + '\')">Bearbeiten</button>' +
+      '<button class="btn klein gefahr"' + (aenderbar ? "" : " disabled") + ' onclick="auftragStornieren(\'' + o.id + '\')">Stornieren</button>' +
+      (aenderbar ? "" : '<span class="hinweis">nur im Status „Offen“ änderbar</span>') + "</div></div>";
+  }).join("");
+  return '<div class="demo-hinweis" style="margin-bottom:12px"><b>Aufträge.</b> Neue Aufträge erscheinen sofort beim Picker und im Leitstand. ' +
+    "Bearbeiten und Stornieren geht nur, solange ein Auftrag offen ist – eine laufende Kommissionierung darf sich nicht ändern.</div>" +
+    '<div class="aktionen" style="margin-bottom:12px"><button class="btn primaer" onclick="auftragModal(null)">Neuer Auftrag</button></div>' + liste;
+}
+function auftragModal(id){
+  const o = id ? auftrag(id) : null;
+  const sortiert = state.artikel.slice().sort((a,b) => a.name.localeCompare(b.name));
+  state.tmpPos = o ? o.positionen.map(p => ({ artikelId:p.artikelId, soll:p.soll }))
+                   : (sortiert.length ? [{ artikelId:sortiert[0].id, soll:1 }] : []);
+  modalOeffnen("<h2>" + (o ? o.id + " bearbeiten" : "Neuer Auftrag") + "</h2>" +
+    '<p class="fliess">Kunde und Zeit angeben, Artikel hinzufügen, speichern.</p>' +
+    '<div class="fehler" id="aufFehler"></div>' +
+    '<div class="feld"><label>Kunde</label><input id="f_kunde" value="' + esc(o ? o.kunde : "") + '"></div>' +
+    '<div class="feld-2"><div class="feld"><label>Priorität</label><select id="f_prio">' +
+    ["normal","eilig","express"].map(v => '<option value="' + v + '"' + (o && o.prio === v ? " selected" : "") + ">" + PRIO_TEXT[v] + "</option>").join("") +
+    '</select></div><div class="feld"><label>Cut-off (heute)</label><input id="f_cut" type="time" value="' + hhmm(o ? o.cutoff : inMin(90)) + '"></div></div>' +
+    '<div class="feld"><label>Tour</label><select id="f_tour">' +
+    state.touren.map(t => '<option value="' + t.id + '"' + (o && o.tour === t.id ? " selected" : "") + ">" + esc(t.name) + "</option>").join("") +
+    "</select></div>" +
+    '<div class="pos-bauer"><label>Positionen – was soll gepickt werden?</label><div id="posListe"></div>' +
+    '<div class="einst-zeile" style="margin-top:8px"><select id="f_art">' +
+    sortiert.map(a => '<option value="' + a.id + '">' + esc(a.name) + " (" + a.artikelnummer + ")</option>").join("") +
+    '</select><button class="btn klein" onclick="posHinzu()">+ hinzufügen</button></div></div>' +
+    '<div class="modal-fuss"><button class="btn" onclick="modalSchliessen()">Abbrechen</button>' +
+    '<button class="btn primaer" onclick="auftragSpeichern(' + (id ? "'" + id + "'" : "null") + ')">Auftrag speichern</button></div>');
+  posRendern();
+}
+function posRendern(){
+  const el = $("#posListe"); if (!el) return;
+  el.innerHTML = state.tmpPos.length ? state.tmpPos.map((p,i) => {
+    const a = art(p.artikelId);
+    return '<div class="pos-zeile"><span>' + katZeichen(a.kategorie) + " " + esc(a.name) + "</span>" +
+      '<span class="ps"><button onclick="posMenge(' + i + ',-1)">−</button><b>' + p.soll + "</b>" +
+      '<button onclick="posMenge(' + i + ',1)">+</button>' +
+      '<button onclick="posWeg(' + i + ')" title="Entfernen">✕</button></span></div>';
+  }).join("") : '<p class="hinweis">Noch keine Position – unten Artikel wählen und hinzufügen.</p>';
+}
+function posMenge(i,d){ const p = state.tmpPos[i]; p.soll = Math.max(1, p.soll + d); posRendern(); }
+function posHinzu(){
+  const id = $("#f_art").value;
+  const da = state.tmpPos.find(p => p.artikelId === id);
+  if (da) da.soll += 1; else state.tmpPos.push({ artikelId:id, soll:1 });
+  posRendern();
+}
+function posWeg(i){ state.tmpPos.splice(i,1); posRendern(); }
+function auftragSpeichern(id){
+  const fehler = $("#aufFehler");
+  if (!feldWert("f_kunde")){ fehler.textContent = "Bitte einen Kunden eingeben."; return; }
+  if (!state.tmpPos.length){ fehler.textContent = "Bitte mindestens einen Artikel hinzufügen."; return; }
+  let o = id ? auftrag(id) : null;
+  if (!o){
+    const max = Math.max(2299, ...state.auftraege.map(x => parseInt(x.id.slice(2), 10) || 0));
+    o = O("A-" + (max + 1), "", "normal", 60, state.touren[0].id, [], "offen", null);
+    state.auftraege.push(o);
+  }
+  o.kunde = feldWert("f_kunde");
+  o.prio = $("#f_prio").value;
+  o.cutoff = zeitHeute($("#f_cut").value || hhmm(inMin(60)));
+  o.tour = $("#f_tour").value;
+  o.positionen = state.tmpPos.map(p => P(p.artikelId, p.soll));
+  loggen((id ? "Auftrag geändert: " : "Neuer Auftrag: ") + o.id + " (" + o.kunde + ", " + o.positionen.length + " Positionen)", "Stammdaten");
+  puls(o.id); modalSchliessen(); rendern();
+}
+function auftragStornieren(id){
+  const o = auftrag(id);
+  if (o.status !== "offen") return;
+  modalFrage("Auftrag stornieren?", "Auftrag <b>" + o.id + "</b> (" + esc(o.kunde) + ") wirklich stornieren?", () => {
+    state.auftraege = state.auftraege.filter(x => x.id !== id);
+    state.kritisch.delete(id);
+    loggen("Auftrag storniert: " + o.id, "Stammdaten");
+    rendern();
+  }, "Ja, stornieren");
+}
+
+function stammPersonal(){
+  const liste = state.picker.map(p => {
+    const beschaeftigt = state.auftraege.some(o => o.picker === p.id && AKTIV.includes(o.status));
+    return '<div class="karte still" style="margin-bottom:10px"><div class="karte-kopf">' +
+      '<span class="avatar">' + esc(p.kuerzel) + "</span>" +
+      '<h3><input value="' + esc(p.name) + '" onchange="pickerUmbenennen(\'' + p.id + '\', this.value)"></h3></div>' +
+      '<div class="auftrag-meta"><span class="chip ohne info mono">' + p.picks + " Picks heute</span>" +
+      '<span class="chip ohne info mono">' + pickerGenau(p) + " % genau</span>" +
+      (beschaeftigt ? '<span class="chip arbeit">hat aktiven Auftrag</span>' : "") + "</div>" +
+      '<div class="aktionen" style="margin-top:12px">' +
+      '<select class="schmal" onchange="pickerStatus(\'' + p.id + '\', this.value)">' +
+      [["aktiv","aktiv"],["pause","Pause"],["problem","Problem"]].map(([v,l]) =>
+        '<option value="' + v + '"' + (p.status === v ? " selected" : "") + ">" + l + "</option>").join("") + "</select>" +
+      '<button class="btn klein gefahr"' + (beschaeftigt || state.picker.length <= 1 ? " disabled" : "") +
+      ' onclick="pickerLoeschen(\'' + p.id + '\')">Entfernen</button></div></div>';
+  }).join("");
+  return '<div class="demo-hinweis" style="margin-bottom:12px"><b>Personal.</b> Namen direkt im Feld ändern – das Kürzel passt sich an. ' +
+    "Mitarbeiter mit aktivem Auftrag lassen sich nicht entfernen. (Personal ist kein Login: Die Demo hat keine Konten.)</div>" +
+    '<div class="aktionen" style="margin-bottom:12px"><button class="btn primaer" onclick="pickerNeu()">Neuer Mitarbeiter</button></div>' + liste;
+}
+function pickerUmbenennen(id, name){
+  const p = pk(id); if (!String(name).trim()) return rendern();
+  loggen("Mitarbeiter umbenannt: " + p.name + " → " + name.trim(), "Stammdaten");
+  p.name = name.trim(); p.kuerzel = kuerzel(p.name);
+  rendern();
+}
+function pickerStatus(id, s){
+  const p = pk(id); p.status = s;
+  loggen("Status von " + p.name + ": " + s, "Stammdaten");
+  if (s === "problem") warnen("rot","👤", p.name + " hat ein Problem gemeldet");
+  rendern();
+}
+function pickerNeu(){
+  modalOeffnen("<h2>Neuer Mitarbeiter</h2>" +
+    '<p class="fliess">Erscheint sofort in der Picker-Übersicht und kann Aufträge übernehmen.</p>' +
+    '<div class="feld"><label>Name</label><input id="f_pname" placeholder="z. B. Maria S."></div>' +
+    '<div class="modal-fuss"><button class="btn" onclick="modalSchliessen()">Abbrechen</button>' +
+    '<button class="btn primaer" onclick="pickerAnlegen()">Anlegen</button></div>');
+}
+function pickerAnlegen(){
+  const n = feldWert("f_pname"); if (!n) return;
+  state.picker.push({ id:neueId("p"), name:n, kuerzel:kuerzel(n), picks:0, fehler:0, status:"aktiv" });
+  loggen("Mitarbeiter angelegt: " + n, "Stammdaten");
+  modalSchliessen(); rendern();
+}
+function pickerLoeschen(id){
+  const p = pk(id);
+  modalFrage("Mitarbeiter entfernen?", "<b>" + esc(p.name) + "</b> wirklich entfernen?", () => {
+    state.auftraege.forEach(o => { if (o.picker === id && o.status === "offen") o.picker = null; });
+    state.picker = state.picker.filter(x => x.id !== id);
+    if (state.aktiverPicker === id) state.aktiverPicker = state.picker[0] ? state.picker[0].id : null;
+    loggen("Mitarbeiter entfernt: " + p.name, "Stammdaten");
+    rendern();
+  }, "Ja, entfernen");
+}
+
+function stammTouren(){
+  const liste = state.touren.map(t => {
+    const benutzt = state.auftraege.filter(o => o.tour === t.id).length;
+    return '<div class="karte still" style="margin-bottom:10px"><div class="karte-kopf">' +
+      '<h3><input value="' + esc(t.name) + '" onchange="tourUmbenennen(\'' + t.id + '\', this.value)"></h3></div>' +
+      '<div class="aktionen" style="align-items:center">' +
+      '<label style="margin:0">Abfahrt heute</label>' +
+      '<input class="schmal" type="time" value="' + hhmm(t.abfahrt) + '" onchange="tourAbfahrt(\'' + t.id + '\', this.value)">' +
+      '<span class="chip ohne info mono">' + benutzt + " Aufträge</span>" +
+      '<button class="btn klein gefahr"' + (benutzt || state.touren.length <= 1 ? " disabled" : "") +
+      ' onclick="tourLoeschen(\'' + t.id + '\')">Löschen</button></div></div>';
+  }).join("");
+  return '<div class="demo-hinweis" style="margin-bottom:12px"><b>Touren / LKW-Abfahrten.</b> Die Abfahrtszeit wirkt sofort auf den ' +
+    "Countdown im Leitstand und auf die Verladung. Touren mit Aufträgen lassen sich nicht löschen.</div>" +
+    '<div class="aktionen" style="margin-bottom:12px"><button class="btn primaer" onclick="tourNeu()">Neue Tour</button></div>' + liste;
+}
+function tourUmbenennen(id, name){
+  const t = tour(id); if (String(name).trim()){ loggen("Tour umbenannt: " + t.name + " → " + name.trim(), "Stammdaten"); t.name = name.trim(); }
+  rendern();
+}
+function tourAbfahrt(id, hm){
+  const t = tour(id); t.abfahrt = zeitHeute(hm);
+  loggen("Abfahrt " + t.name + " geändert auf " + hm + " Uhr", "Stammdaten");
+  rendern();
+}
+function tourNeu(){
+  modalOeffnen("<h2>Neue Tour</h2>" +
+    '<p class="fliess">Startet mit Abfahrt in 3 Stunden – die Zeit lässt sich danach direkt in der Karte ändern.</p>' +
+    '<div class="feld"><label>Name</label><input id="f_tname" placeholder="z. B. Tour West"></div>' +
+    '<div class="modal-fuss"><button class="btn" onclick="modalSchliessen()">Abbrechen</button>' +
+    '<button class="btn primaer" onclick="tourAnlegen()">Anlegen</button></div>');
+}
+function tourAnlegen(){
+  const n = feldWert("f_tname"); if (!n) return;
+  state.touren.push({ id:neueId("t"), name:n, abfahrt: inMin(180) });
+  loggen("Neue Tour angelegt: " + n, "Stammdaten");
+  modalSchliessen(); rendern();
+}
+function tourLoeschen(id){
+  const t = tour(id);
+  if (state.auftraege.some(o => o.tour === id)) return;
+  modalFrage("Tour löschen?", "Tour <b>" + esc(t.name) + "</b> löschen?", () => {
+    state.touren = state.touren.filter(x => x.id !== id);
+    loggen("Tour gelöscht: " + t.name, "Stammdaten");
+    rendern();
+  }, "Ja, löschen");
+}
+
+/* ============================================================
+   ANSICHT 5 · AUSWERTUNG
+   ============================================================ */
+function ansichtAuswertung(){
+  const gen = genauigkeit();
+  const erledigt = state.auftraege.filter(o => ["gepackt","verladen"].includes(o.status)).length;
+  const offeneTeile = state.auftraege.filter(o => AKTIV.includes(o.status)).length;
+  const wenig = state.artikel.filter(a => a.bestand < a.mindestbestand);
+  const maxPicks = Math.max(1, ...state.picker.map(p => p.picks));
+
+  const leistung = state.picker.map(p =>
+    '<div class="balken-zeile"><span class="bz-name">' + esc(p.name) + "</span>" +
+    '<div class="fortschritt"><i style="width:' + Math.round(p.picks / maxPicks * 100) + '%"></i></div>' +
+    '<span class="bz-wert">' + p.picks + "</span></div>").join("");
+
+  const touren = state.touren.map(t => {
+    const alle = state.auftraege.filter(o => o.tour === t.id);
+    const fertig = alle.filter(o => o.status === "verladen").length;
+    const pct = alle.length ? Math.round(fertig / alle.length * 100) : 0;
+    return '<div class="balken-zeile"><span class="bz-name">' + esc(t.name) + "</span>" +
+      '<div class="fortschritt' + (pct === 100 ? " fertig" : "") + '"><i style="width:' + pct + '%"></i></div>' +
+      '<span class="bz-wert">' + fertig + "/" + alle.length + "</span></div>";
+  }).join("");
+
+  const bestand = wenig.length ? wenig.map(a =>
+    '<div class="zeile"><span class="name">' + esc(a.name) + ' <span class="meta mono">' + a.artikelnummer + "</span></span>" +
+    '<span class="meta mono">' + a.bestand + " / min. " + a.mindestbestand + "</span>" +
+    '<span class="chip warn">nachbestellen</span></div>').join("")
+    : '<div class="leer"><b>Alle Bestände über dem Minimum</b>Nichts nachzubestellen.</div>';
+
+  return '<div class="abschnitt"><div><span class="eyebrow">Ansicht 5 · Kennzahlen</span><h2>Auswertung</h2></div>' +
+    '<span class="hinweis">Live aus den Demo-Daten dieser Sitzung berechnet</span></div>' +
+    '<div class="kpis">' +
+    kpi("Aufträge erledigt", erledigt + " / " + state.auftraege.length, "gepackt oder verladen") +
+    kpi("Pick-Genauigkeit", gen.toFixed(1) + " <small>%</small>", "Ziel: " + state.einst.zielGenauigkeit + " %",
+        gen >= state.einst.zielGenauigkeit ? "gut" : "warnung") +
+    kpi("Ø Picks / Stunde", picksProStunde(), "über alle Picker") +
+    kpi("Noch in Arbeit", offeneTeile, "offen + in Kommissionierung", offeneTeile ? "" : "gut") +
+    kpi("Artikel unter Minimum", wenig.length, "Nachbestellung nötig", wenig.length ? "warnung" : "gut") +
+    "</div>" +
+    '<div class="raster r2">' +
+    '<div class="karte still"><div class="karte-kopf"><h3>Picks je Mitarbeiter (heute)</h3></div>' + leistung + "</div>" +
+    '<div class="karte still"><div class="karte-kopf"><h3>Verladung je Tour</h3></div>' + touren + "</div>" +
+    "</div>" +
+    '<div class="abschnitt"><h3>Bestände unter Mindestmenge</h3></div>' +
+    '<div class="karte still">' + bestand + "</div>" +
+    '<div class="abschnitt"><h3>Ereignis-Log</h3></div>' + logKarte();
+}
+
+/* ============================================================
+   EINSTELLUNGEN (Zahnrad) – gleiche Stelle wie in allen Apps
+   ============================================================ */
+function oeffneEinstellungen(){
+  const e = state.einst;
+  const zahl = (name, text, key, einheit, min, max, schritt) =>
+    '<div class="regel-zeile"><div class="rz-info"><div class="rz-name">' + name + '</div><div class="rz-text">' + text + "</div></div>" +
+    '<input type="number" id="e_' + key + '" min="' + min + '" max="' + max + '" step="' + (schritt || 1) + '" value="' + e[key] + '">' +
+    '<span class="hinweis" style="width:36px">' + einheit + "</span></div>";
+  const schalter = (name, text, key) =>
+    '<div class="regel-zeile"><div class="rz-info"><div class="rz-name">' + name + '</div><div class="rz-text">' + text + "</div></div>" +
+    '<label class="haken"><input type="checkbox" id="e_' + key + '"' + (e[key] ? " checked" : "") + "></label></div>";
+
+  const kats = e.kategorien.map((k,i) =>
+    '<div class="einst-zeile"><input style="max-width:70px;text-align:center" value="' + esc(k.zeichen) + '" onchange="katSetzen(' + i + ",'zeichen',this.value)\">" +
+    '<input value="' + esc(k.name) + '" onchange="katSetzen(' + i + ",'name',this.value)\">" +
+    '<button class="btn klein gefahr" onclick="katWeg(' + i + ')">Entfernen</button></div>').join("");
+  const packs = e.packstuecke.map((p,i) =>
+    '<div class="einst-zeile"><input value="' + esc(p) + '" onchange="packSetzen(' + i + ',this.value)">' +
+    '<button class="btn klein gefahr" onclick="packWeg(' + i + ')">Entfernen</button></div>').join("");
+
+  modalOeffnen("<h2>Einstellungen</h2>" +
+    '<p class="fliess">Alles hier ist frei anpassbar und wirkt sofort in allen Ansichten. In der Demo liegen die Einstellungen nur im Arbeitsspeicher – Neuladen setzt sie zurück.</p>' +
+
+    '<div class="modal-block"><h3>Betrieb</h3>' +
+    '<div class="feld"><label>Name des Betriebs</label><input id="e_firma" value="' + esc(e.firma) + '"></div></div>' +
+
+    '<div class="modal-block"><h3>Zeiten &amp; Warnungen</h3>' +
+    zahl("Ø-Zeit pro Pick","Basis der Cut-off-Warnung: offene Positionen × diese Zeit + Versand-Puffer.","pickSek","Sek",10,600,5) +
+    zahl("Versand-Puffer","Zeit für Kontrolle, Packen und Verladen nach dem letzten Pick.","pufferMin","Min",0,120,1) +
+    zahl("Abfahrts-Vorwarnung","Ab dieser Restzeit färbt sich „Nächste Abfahrt“ rot.","abfahrtWarnMin","Min",1,120,1) +
+    zahl("Ziel-Genauigkeit","Ab diesem Wert ist die Pick-Genauigkeit grün.","zielGenauigkeit","%",90,100,0.1) + "</div>" +
+
+    '<div class="modal-block"><h3>Ablauf-Regeln</h3>' +
+    '<div class="regel-zeile"><div class="rz-info"><div class="rz-name">Laufweg</div>' +
+    '<div class="rz-text">Schlange: ungerade Gänge aufwärts, gerade abwärts – kürzeste Wege. Linear: immer aufsteigend.</div></div>' +
+    '<select id="e_route"><option value="schlange"' + (e.route === "schlange" ? " selected" : "") + ">Schlange (empfohlen)</option>" +
+    '<option value="linear"' + (e.route === "linear" ? " selected" : "") + ">Linear</option></select></div>" +
+    schalter("Kontrollzählung am Packplatz","Positionen müssen vor „Verpackt“ einzeln abgehakt werden.","kontrolle") +
+    schalter("Überpicken erlauben","Picker dürfen mehr als die Soll-Menge bestätigen.","ueberpicken") +
+    schalter("Knopf „Scan simulieren“","Demo-Hilfe in der Picker-Ansicht. Am echten Gerät genügt Scanner + Enter.","scanKnopf") + "</div>" +
+
+    '<div class="modal-block"><h3>Kategorien <button class="btn klein" onclick="katNeu()">+ Kategorie</button></h3>' + kats + "</div>" +
+    '<div class="modal-block"><h3>Packstücke <button class="btn klein" onclick="packNeu()">+ Packstück</button></h3>' + packs + "</div>" +
+
+    '<div class="modal-block"><h3>Demo</h3>' +
+    '<div class="regel-zeile"><div class="rz-info"><div class="rz-name">Demo zurücksetzen</div>' +
+    '<div class="rz-text">Lädt die Beispieldaten frisch. Es werden ohnehin keine Daten gespeichert.</div></div>' +
+    '<button class="btn gefahr" onclick="demoZuruecksetzen()">Zurücksetzen</button></div></div>' +
+
+    '<div class="modal-fuss"><button class="btn" onclick="modalSchliessen()">Abbrechen</button>' +
+    '<button class="btn primaer" onclick="einstellungenSpeichern()">Speichern</button></div>', true);
+}
+function einstellungenLesen(){
+  if (!$("#e_firma")) return;
+  const e = state.einst;
+  e.firma = feldWert("e_firma") || e.firma;
+  e.pickSek = feldZahl("e_pickSek", e.pickSek);
+  e.pufferMin = feldZahl("e_pufferMin", e.pufferMin);
+  e.abfahrtWarnMin = feldZahl("e_abfahrtWarnMin", e.abfahrtWarnMin);
+  e.zielGenauigkeit = feldZahl("e_zielGenauigkeit", e.zielGenauigkeit);
+  e.route = $("#e_route").value;
+  e.kontrolle = $("#e_kontrolle").checked;
+  e.ueberpicken = $("#e_ueberpicken").checked;
+  e.scanKnopf = $("#e_scanKnopf").checked;
+}
+function einstellungenSpeichern(){
+  einstellungenLesen();
+  state.name = state.einst.firma;
+  document.getElementById("appName").textContent = state.name;
+  loggen("Einstellungen geändert (Betrieb, Schwellen, Regeln, Kategorien, Packstücke)", "Einstellungen");
+  modalSchliessen(); rendern();
+}
+function katSetzen(i, key, wert){
+  wert = String(wert).trim(); if (!wert) return oeffneEinstellungen();
+  einstellungenLesen();
+  if (key === "name"){
+    const alt = state.einst.kategorien[i].name;
+    state.artikel.forEach(a => { if (a.kategorie === alt) a.kategorie = wert; });
+  }
+  state.einst.kategorien[i][key] = wert;
+  oeffneEinstellungen();
+}
+function katNeu(){ einstellungenLesen(); state.einst.kategorien.push({ name:"Neue Kategorie", zeichen:"📦" }); oeffneEinstellungen(); }
+function katWeg(i){
+  einstellungenLesen();
+  const k = state.einst.kategorien[i];
+  if (state.artikel.some(a => a.kategorie === k.name)){
+    modalInfo("Nicht möglich", "Die Kategorie <b>" + esc(k.name) + "</b> wird noch von Artikeln verwendet.");
+    return;
+  }
+  state.einst.kategorien.splice(i,1); oeffneEinstellungen();
+}
+function packSetzen(i, wert){ einstellungenLesen(); if (String(wert).trim()) state.einst.packstuecke[i] = wert.trim(); oeffneEinstellungen(); }
+function packNeu(){ einstellungenLesen(); state.einst.packstuecke.push("Neues Packstück"); oeffneEinstellungen(); }
+function packWeg(i){
+  einstellungenLesen();
+  if (state.einst.packstuecke.length <= 1){ modalInfo("Nicht möglich", "Mindestens ein Packstück muss bestehen bleiben."); return; }
+  state.einst.packstuecke.splice(i,1); oeffneEinstellungen();
+}
+
+/* ---------- Hilfe ---------- */
+function oeffneHilfe(){
+  modalOeffnen('<h2>So funktioniert PickFlow</h2>' +
+    '<div class="hilfe-block hilfe-demo demo-hinweis" style="margin-bottom:16px"><b>Demo-Version.</b> Alle Artikel, Aufträge und Namen sind Beispieldaten. ' +
+    'Es gibt <b>keine Anmeldung und keine Konten</b> – alle Ansichten sind über die Reiter oben frei zugänglich. ' +
+    'Nichts wird gespeichert oder versendet; Neuladen setzt die Demo zurück.</div>' +
+
+    '<div class="hilfe-block"><h3>Die Idee</h3><p>Ein Lager, vier Ansichten – alle auf demselben Live-Zustand. Was der Picker tut, ist sofort im Leitstand und am Packplatz sichtbar.</p></div>' +
+
+    '<div class="hilfe-block"><h3>Die Ansichten (Reiter oben)</h3><ul>' +
+    '<li><b>Leitstand:</b> Auftrags-Board von „Offen“ bis „Verladen“, Live-Kennzahlen, Picker-Übersicht, Warnungen (mit OK quittieren) und Ereignis-Log. Offene Aufträge direkt zuweisen und priorisieren.</li>' +
+    '<li><b>Picker:</b> Auftrag antippen – die App führt in laufoptimierter Reihenfolge von Lagerplatz zu Lagerplatz (<kbd>G03-R14-B2</kbd> = Gang 3, Regal 14, Boden 2). Scannen = Artikelnummer eintippen + Enter (oder den Simulieren-Knopf). Falscher Artikel: roter Stopp. Danach Menge mit − / + bestätigen; weniger als Soll = Teilpick.</li>' +
+    '<li><b>Packplatz:</b> Positionen abhaken, Packstück wählen, „Verpackt“. Rechts die Verladung nach Tour.</li>' +
+    '<li><b>Stammdaten:</b> Artikel, Aufträge, Personal und Touren anlegen und ändern.</li>' +
+    '<li><b>Auswertung:</b> Genauigkeit, Durchsatz, Leistung je Mitarbeiter, Bestände unter Minimum.</li></ul></div>' +
+
+    '<div class="hilfe-block"><h3>Cut-off-Warnung</h3><p>Ein Auftrag wird rot, wenn die verbleibenden Positionen × <b>' + state.einst.pickSek +
+    ' Sekunden</b> plus <b>' + state.einst.pufferMin + ' Minuten</b> Versand-Puffer nicht mehr in die Restzeit bis zum Cut-off passen. Beide Werte sind unter ⚙ Einstellungen änderbar.</p></div>' +
+
+    '<div class="hilfe-block"><h3>Einstellungen (Zahnrad oben rechts)</h3><p>Betriebsname, Warnschwellen, Laufweg-Logik, Prozess-Regeln, Kategorien und Packstücke – alles frei anpassbar und sofort überall wirksam.</p></div>' +
+
+    '<div class="modal-fuss"><button class="btn primaer" onclick="modalSchliessen()">Alles klar</button></div>', true);
+}
+
+/* ---------- Rendern & Takt ---------- */
+function beimWechsel(id){ if (id !== "picker") return; }
+function rendern(){
+  navBauen();
+  const app = $("#app");
+  if (state.ansicht === "leitstand")       app.innerHTML = ansichtLeitstand();
+  else if (state.ansicht === "picker")     app.innerHTML = ansichtPicker();
+  else if (state.ansicht === "packplatz")  app.innerHTML = ansichtPackplatz();
+  else if (state.ansicht === "stammdaten") app.innerHTML = ansichtStammdaten();
+  else if (state.ansicht === "auswertung") app.innerHTML = ansichtAuswertung();
+  pulsAnwenden();
+  const feld = $("#scanFeld");
+  if (feld) feld.focus();
+}
+function takt(){
+  const jetzt = Date.now();
+  $$("[data-cut]").forEach(el => {
+    el.textContent = restText(Number(el.getAttribute("data-cut")) - jetzt);
+  });
+  if (kritischPruefen()) rendern();
+}
+
+/* ---------- Start ---------- */
+demoDaten();
+starten();
+
+</script>
+</body>
+</html>
